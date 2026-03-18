@@ -1,0 +1,2 @@
+[console_scripts]
+cutai = cutai.cli:app_entry

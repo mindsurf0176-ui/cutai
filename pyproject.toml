@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cutai"
+version = "0.1.0"
+description = "AI video editor that takes natural language instructions and edits videos locally."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Minseo", email = "minseo@example.com" },
+]
+keywords = ["video", "editor", "ai", "ffmpeg", "whisper"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Video",
+]
+dependencies = [
+    "faster-whisper>=1.0",
+    "scenedetect[opencv]>=0.6",
+    "typer>=0.9",
+    "rich>=13.0",
+    "openai>=1.0",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+cutai = "cutai.cli:app_entry"
+
+[project.urls]
+Homepage = "https://github.com/minseo/cutai"
+Repository = "https://github.com/minseo/cutai"
+
+[tool.setuptools.packages.find]
+include = ["cutai*"]
