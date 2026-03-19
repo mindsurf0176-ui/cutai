@@ -4,8 +4,10 @@ Version: 0.1.0
 Summary: AI video editor that takes natural language instructions and edits videos locally.
 Author-email: Minseo <minseo@example.com>
 License-Expression: MIT
-Project-URL: Homepage, https://github.com/minseo/cutai
-Project-URL: Repository, https://github.com/minseo/cutai
+Project-URL: Homepage, https://github.com/mindsurf0176-ui/cutai
+Project-URL: Repository, https://github.com/mindsurf0176-ui/cutai
+Project-URL: Documentation, https://github.com/mindsurf0176-ui/cutai#readme
+Project-URL: Issues, https://github.com/mindsurf0176-ui/cutai/issues
 Keywords: video,editor,ai,ffmpeg,whisper
 Classifier: Development Status :: 3 - Alpha
 Classifier: Intended Audience :: Developers
@@ -13,99 +15,437 @@ Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
 Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Programming Language :: Python :: 3.14
 Classifier: Topic :: Multimedia :: Video
+Classifier: Topic :: Multimedia :: Video :: Non-Linear Editor
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
-Requires-Dist: openai-whisper>=20231117
+License-File: LICENSE
+Requires-Dist: faster-whisper>=1.0
 Requires-Dist: scenedetect[opencv]>=0.6
 Requires-Dist: typer>=0.9
 Requires-Dist: rich>=13.0
 Requires-Dist: openai>=1.0
 Requires-Dist: pydantic>=2.0
 Requires-Dist: pyyaml>=6.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: ruff>=0.1; extra == "dev"
+Requires-Dist: mypy>=1.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0; extra == "dev"
+Dynamic: license-file
 
-# 🎬 CutAI
+# 🎬 CutAI — AI Video Editor with Natural Language
 
-> AI video editor that takes natural language instructions and edits videos locally.
+> "Film it. Describe the edit. Done."
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/mindsurf0176-ui/cutai/blob/main/LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![PyPI version](https://img.shields.io/pypi/v/cutai.svg)](https://pypi.org/project/cutai/)
+[![CI](https://github.com/mindsurf0176-ui/cutai/actions/workflows/ci.yml/badge.svg)](https://github.com/mindsurf0176-ui/cutai/actions/workflows/ci.yml)
+
+**CutAI** is an open-source, local-first AI video editor. Give it a video and a sentence — it analyzes scenes, removes silence, adds subtitles, applies color grading, and renders the result. No cloud, no subscription, no upload. Everything runs on your machine.
 
 ```bash
-cutai edit video.mp4 --instruction "remove silence, add subtitles"
+$ cutai edit vlog.mp4 -i "remove boring parts, add subtitles, make it warm and cinematic"
+
+🎬 Analyzing vlog.mp4...
+  ✅ Detected 23 scenes (12:34)
+  ✅ Transcribed 847 words
+  ✅ Found 4 silent segments
+
+📋 Edit Plan:
+  • Remove 6 low-engagement scenes
+  • Remove 4 silent segments
+  • Add subtitles (auto-detected: English)
+  • Apply warm color grade
+
+🎬 Rendering → output/vlog_edited.mp4
+  ✅ Done! 7:21 (trimmed 42%)
 ```
 
-## Features
+---
 
-- **Natural language editing** — describe what you want, AI does the rest
-- **100% local** — no cloud uploads, complete privacy
-- **Scene detection** — automatic scene boundary detection
-- **Transcription** — OpenAI Whisper for speech-to-text
-- **Smart cuts** — remove silence, trim to duration, keep interesting parts
-- **Subtitles** — auto-generated from transcript (ASS format, burned in)
-- **Open source** — MIT license, free forever
+## ✨ Features
 
-## Installation
+### Core Editing
+- **Natural language instructions** — describe edits in English or Korean
+- **Smart scene detection** — content-aware scene boundary detection via PySceneDetect
+- **Silence removal** — automatically finds and cuts dead air
+- **Auto-generated subtitles** — powered by Whisper, supports 99+ languages
+- **BGM mixing** — add mood-based background music with auto fade-in/out
+- **Color grading** — presets: bright, warm, cool, cinematic, vintage
+- **Transitions** — fade, dissolve, wipe between scenes
+- **Speed control** — speed up, slow down, or set custom playback rates
+
+### 🧬 Edit Style Transfer
+
+Extract the "editing DNA" from any video and apply it to your footage — like LoRA for video editing.
 
 ```bash
-# Prerequisites
-brew install ffmpeg  # macOS
+# Extract how a YouTuber edits
+$ cutai style-extract pewdiepie_video.mp4 -o pewdiepie-style.yaml
 
-# Install CutAI
-pip install -e .
+# Apply that style to your video
+$ cutai style-apply myvlog.mp4 --style pewdiepie-style.yaml -o output.mp4
 
-# Verify
+# Learn a channel's style from multiple videos
+$ cutai style-learn vid1.mp4 vid2.mp4 vid3.mp4 --name "my-channel" -o channel-style.yaml
+```
+
+The Edit DNA captures rhythm (cut pacing, cuts per minute), transitions (fade vs. hard cut ratios), visual tone (brightness, saturation, color temperature), audio mixing (BGM presence, silence tolerance), and subtitle preferences — all as a portable YAML file.
+
+### 🎯 Smart Highlights
+- **Engagement scoring** — AI scores each scene (0–100) based on audio energy, speech density, visual activity, and pacing
+- **Highlight reels** — auto-generate best-moments, narrative, or shorts-style highlight clips
+- **Duration targeting** — specify output length, and CutAI picks the best scenes to fit
+
+### 💬 Interactive Chat Mode
+- **REPL-based editing** — iteratively refine edits through conversation
+- **Undo/redo** — full history stack, roll back any edit
+- **Live preview** — generate quick 360p previews before final render
+- **Style loading** — load Edit DNA presets mid-session
+- **Slash commands** — `/preview`, `/render`, `/undo`, `/redo`, `/style`, `/plan`, `/help`
+
+### 🔒 100% Local & Free
+- **No cloud uploads** — your videos never leave your machine
+- **Works offline** — use with Ollama for fully air-gapped operation
+- **MIT licensed** — free for personal and commercial use, no usage limits
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+```bash
+# macOS
+brew install ffmpeg
+
+# Ubuntu / Debian
+sudo apt-get update && sudo apt-get install -y ffmpeg
+
+# Windows (via Chocolatey)
+choco install ffmpeg
+```
+
+### Installation
+
+```bash
+pip install cutai
 cutai --help
 ```
 
-## Quick Start
-
-### Analyze a video
+### Your First Edit
 
 ```bash
-cutai analyze video.mp4
-cutai analyze video.mp4 --output analysis.json
+# Basic edit — remove silence and add subtitles
+cutai edit video.mp4 -i "remove silence, add subtitles"
+
+# Apply cinematic look
+cutai edit vlog.mp4 -i "자막 추가, 시네마틱하게, 배경음악 넣어줘"
+
+# Interactive chat mode
+cutai chat video.mp4
+
+# Quick low-res preview (5–10× faster)
+cutai preview video.mp4 -i "remove boring parts"
 ```
 
-### Remove silence and add subtitles
+### Style Transfer Workflow
 
 ```bash
-cutai edit video.mp4 -i "remove silence and add subtitles"
+# 1. Extract style from a reference video
+cutai style-extract reference.mp4 -o style.yaml
+
+# 2. View what was extracted
+cutai style-show style.yaml
+
+# 3. Apply to your video
+cutai edit myvideo.mp4 --style style.yaml
+
+# Or use built-in presets
+cutai edit myvideo.mp4 --style cinematic
 ```
 
-### Plan only (no render)
+### Smart Highlights
 
 ```bash
-cutai plan video.mp4 -i "trim to 5 minutes" --no-llm
+# Generate a 60-second highlight reel
+cutai highlights longvideo.mp4 --duration 60
+
+# Shorts-style: best contiguous segment
+cutai highlights longvideo.mp4 --duration 60 --style shorts
+
+# Narrative: keep story arc (hook + ending)
+cutai highlights longvideo.mp4 --duration 120 --style narrative
+
+# View engagement scores per scene
+cutai engagement video.mp4
 ```
 
-### Use rule-based planning (no API key needed)
+### Multi-Video Editing
 
 ```bash
-cutai edit video.mp4 -i "무음 제거" --no-llm
+# Combine clips into one video
+cutai multi clip1.mp4 clip2.mp4 clip3.mp4 -i "make a travel montage"
+
+# Combine with style
+cutai multi day1.mp4 day2.mp4 -i "remove boring parts" --style vlog-casual
 ```
 
-## Configuration
+---
 
-Create `~/.cutai/config.yaml`:
+## 📖 Commands
+
+| Command | Description |
+|---------|-------------|
+| `cutai edit` | Full pipeline: analyze → plan → render |
+| `cutai chat` | Interactive chat-based editing |
+| `cutai analyze` | Analyze video (scenes, transcript, quality) |
+| `cutai plan` | Generate edit plan without rendering |
+| `cutai preview` | Quick low-res preview (360p) |
+| `cutai multi` | Combine and edit multiple videos |
+| `cutai highlights` | Auto-generate highlight reel |
+| `cutai engagement` | Show per-scene engagement scores |
+| `cutai style-extract` | Extract Edit DNA from a video |
+| `cutai style-apply` | Apply Edit DNA to a video |
+| `cutai style-learn` | Learn style from multiple videos |
+| `cutai style-show` | Display Edit DNA details |
+| `cutai prefs` | View/reset learned preferences |
+
+---
+
+## 🧬 Edit Style Transfer — How It Works
+
+**The Idea:** Every video editor has a style — how fast they cut, which transitions they use, how they grade colors. CutAI extracts these patterns into a structured "Edit DNA" that can be saved, shared, and applied to other videos.
+
+```
+┌─────────────┐    extract    ┌───────────┐    apply     ┌──────────────┐
+│  Reference   │ ──────────→ │  Edit DNA  │ ──────────→ │  Your Video  │
+│  Video       │              │  (YAML)    │              │  (styled)    │
+└─────────────┘              └───────────┘              └──────────────┘
+```
+
+### Edit DNA Structure
 
 ```yaml
-openai_api_key: sk-...
-default_whisper_model: base
-default_llm: gpt-4o
-output_dir: ./output
+name: cinematic
+description: Slow pacing, desaturated tones, dramatic transitions
+rhythm:
+  avg_cut_length: 6.0          # seconds between cuts
+  cuts_per_minute: 6.0         # overall pacing
+  pacing_curve: slow-fast-slow # how pace changes over time
+transitions:
+  jump_cut_ratio: 0.5          # 50% hard cuts
+  fade_ratio: 0.3              # 30% fades
+  dissolve_ratio: 0.15         # 15% dissolves
+  avg_transition_duration: 1.0
+visual:
+  avg_brightness: -0.1         # slightly darker
+  avg_saturation: 0.8          # desaturated
+  avg_contrast: 1.2            # boosted contrast
+  color_temperature: cool
+audio:
+  has_bgm: true
+  bgm_volume_ratio: 0.2
+  silence_tolerance: 2.0       # allow longer pauses
+subtitle:
+  has_subtitles: false
 ```
 
-Or use environment variables:
+Think of it like **image style transfer, but for video editing decisions**. Or like a **LoRA** — a small, portable file that shifts the behavior of the editing pipeline.
+
+### Built-in Presets
+
+| Preset | Pacing | Color | Transitions |
+|--------|--------|-------|-------------|
+| `cinematic` | Slow (6s avg cuts) | Cool, desaturated | Fades + dissolves |
+| `vlog-casual` | Fast (2–3s cuts) | Warm, bright | Jump cuts |
+
+Create your own presets with `cutai style-extract` or write YAML by hand.
+
+---
+
+## ⚙️ Configuration
+
+### Config File
+
+CutAI stores configuration at `~/.cutai/config.yaml`:
+
+```yaml
+openai_api_key: ""              # For LLM-powered edit planning
+default_whisper_model: base     # tiny/base/small/medium/large
+default_llm: gpt-4o            # LLM model for planning
+output_dir: ./output            # Default output directory
+```
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `OPENAI_API_KEY` | OpenAI API key (enables LLM-based planning) |
+| `CUTAI_WHISPER_MODEL` | Default Whisper model size |
+| `CUTAI_LLM` | Default LLM model |
+| `CUTAI_OUTPUT_DIR` | Default output directory |
+| `CUTAI_FFMPEG_PATH` | Custom FFmpeg binary path |
+
+### Local-Only Mode (No API Key)
+
+CutAI works without any API key using **rule-based planning**. Common instructions like "remove silence", "add subtitles", "make it cinematic" are handled by built-in rules — no LLM needed.
+
+For more complex instructions, set `OPENAI_API_KEY` or use a local LLM via Ollama.
+
+### Personal Learning
+
+CutAI learns from your editing patterns over time. Preferences are stored locally at `~/.cutai/learning.json` — your editing history never leaves your machine.
 
 ```bash
-export OPENAI_API_KEY=sk-...
-export CUTAI_WHISPER_MODEL=base
+# View learned preferences
+cutai prefs
+
+# Reset learning data
+cutai prefs --reset
 ```
 
-## Requirements
+---
 
-- Python ≥ 3.10
-- FFmpeg
-- ~2GB disk for Whisper base model
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        CutAI Pipeline                       │
+│                                                             │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
+│  │ Analyzer │→│ Planner  │→│  Editor  │→│  Renderer  │  │
+│  │          │  │          │  │          │  │            │  │
+│  │• Scenes  │  │• Rules   │  │• Cutter  │  │• FFmpeg    │  │
+│  │• Whisper │  │• LLM     │  │• Subtitle│  │• Concat    │  │
+│  │• Quality │  │• Style   │  │• BGM     │  │• Filters   │  │
+│  │• Energy  │  │• Learning│  │• Color   │  │            │  │
+│  │          │  │          │  │• Speed   │  │            │  │
+│  │          │  │          │  │• Trans.  │  │            │  │
+│  └──────────┘  └──────────┘  └──────────┘  └────────────┘  │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ Style Engine: Extractor → DNA (YAML) → Applier      │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ Engagement Engine: Audio + Visual + Structural → 0-100│  │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Module Breakdown
+
+```
+cutai/
+├── cli.py                  # Typer CLI with Rich formatting
+├── config.py               # Config management (~/.cutai/)
+├── chat.py                 # Interactive REPL chat mode
+├── highlight.py            # Smart highlight generation
+├── learning.py             # Personal preference learning
+├── multi.py                # Multi-video editing pipeline
+├── preview.py              # Low-res preview renderer
+├── models/
+│   └── types.py            # Pydantic v2 models (30+ types)
+├── analyzer/
+│   ├── scene_detector.py   # PySceneDetect integration
+│   ├── transcriber.py      # Whisper transcription
+│   ├── quality_analyzer.py # Silence detection, audio analysis
+│   └── engagement.py       # Engagement scoring engine
+├── editor/
+│   ├── cutter.py           # Cut/trim operations
+│   ├── subtitle.py         # ASS subtitle generation
+│   ├── bgm.py              # Background music mixing
+│   ├── color.py            # Color grading (FFmpeg filters)
+│   ├── speed.py            # Speed adjustment
+│   ├── transition.py       # Scene transitions
+│   └── renderer.py         # Final render orchestration
+├── planner/
+│   └── edit_planner.py     # Rule-based + LLM planning
+└── style/
+    ├── extractor.py        # Extract Edit DNA from video
+    ├── applier.py          # Apply Edit DNA to video
+    ├── learner.py          # Learn style from multiple videos
+    ├── io.py               # YAML serialization
+    └── presets/            # Built-in style presets
+        ├── cinematic.yaml
+        └── vlog-casual.yaml
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
+
+### Quick Start
+
+```bash
+git clone https://github.com/mindsurf0176-ui/cutai.git
+cd cutai
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+pytest tests/ -v
+```
+
+### Ways to Contribute
+
+- 🐛 **Bug reports** — open an issue with reproduction steps
+- 🧬 **Style presets** — create and share Edit DNA presets
+- 🔧 **New edit operations** — add operations in `cutai/editor/`
+- 📖 **Documentation** — improve docs, add examples
+- 🌍 **Translations** — help with i18n for rule-based patterns
+
+---
+
+## 📊 Benchmarks
+
+Processing time depends on video length, Whisper model size, and whether LLM planning is used.
+
+| Video Length | Analyze | Plan (rules) | Plan (LLM) | Render | Total (rules) |
+|-------------|---------|---------------|-------------|--------|---------------|
+| 1 min | ~5s | <1s | ~3s | ~10s | ~15s |
+| 5 min | ~15s | <1s | ~5s | ~45s | ~60s |
+| 15 min | ~40s | <1s | ~8s | ~2min | ~3min |
+| 60 min | ~3min | <1s | ~15s | ~8min | ~11min |
+
+*Measured on M1 MacBook Pro, Whisper `base` model, 1080p source.*
+
+### Hardware Requirements
+
+- **Minimum:** 4GB RAM, any modern CPU, FFmpeg installed
+- **Recommended:** 8GB+ RAM, Apple Silicon or modern x86-64
+- **Whisper models:** `tiny` (39MB) → `large` (3GB) — bigger = more accurate but slower
+
+---
+
+## 🗺️ Roadmap
+
+- [x] Core editing (cuts, subtitles, BGM, color grading, transitions, speed)
+- [x] Edit Style Transfer (DNA extraction + application + learning)
+- [x] Engagement scoring + smart highlights
+- [x] Interactive chat mode with undo/redo + preview
+- [x] Multi-video editing
+- [x] Personal learning from editing patterns
+- [x] Built-in style presets
+- [ ] GPU acceleration (CUDA / Metal)
+- [ ] Web UI
+- [ ] Plugin system for custom operations
+- [ ] Community style preset marketplace
+- [ ] Real-time preview during chat
+- [ ] Batch processing mode
+
+---
 
 ## License
 
-MIT
+[MIT](LICENSE) — free for personal and commercial use.
+
+---
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=mindsurf0176-ui/cutai&type=Date)](https://star-history.com/#mindsurf0176-ui/cutai&Date)
