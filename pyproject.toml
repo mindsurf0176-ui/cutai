@@ -16,11 +16,15 @@ keywords = ["video", "editor", "ai", "ffmpeg", "whisper"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Multimedia :: Video",
+    "Topic :: Multimedia :: Video :: Non-Linear Editor",
 ]
 dependencies = [
     "faster-whisper>=1.0",
@@ -32,12 +36,36 @@ dependencies = [
     "pyyaml>=6.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.1",
+    "mypy>=1.0",
+    "pytest-cov>=4.0",
+]
+
 [project.scripts]
 cutai = "cutai.cli:app_entry"
 
 [project.urls]
-Homepage = "https://github.com/minseo/cutai"
-Repository = "https://github.com/minseo/cutai"
+Homepage = "https://github.com/minseo-ai/cutai"
+Repository = "https://github.com/minseo-ai/cutai"
+Documentation = "https://github.com/minseo-ai/cutai#readme"
+Issues = "https://github.com/minseo-ai/cutai/issues"
 
 [tool.setuptools.packages.find]
 include = ["cutai*"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

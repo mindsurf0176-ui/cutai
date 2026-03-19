@@ -11,12 +11,20 @@ import json
 import logging
 import re
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from cutai.models.types import UserPreferences
 
 from cutai.config import load_config
 from cutai.models.types import (
+    BGMOperation,
+    ColorGradeOperation,
     CutOperation,
     EditPlan,
+    SpeedOperation,
     SubtitleOperation,
+    TransitionOperation,
     VideoAnalysis,
 )
 
@@ -30,6 +38,7 @@ def create_edit_plan(
     instruction: str,
     llm_model: str = "gpt-4o",
     use_llm: bool = True,
+    preferences: "UserPreferences | None" = None,
 ) -> EditPlan:
     """Create an edit plan from a video analysis and instruction.
 
@@ -37,11 +46,16 @@ def create_edit_plan(
     Falls back to LLM if no rule matches or if use_llm is True and
     the rule-based plan seems insufficient.
 
+    When *preferences* are provided, few-shot examples from the user's
+    history are injected into the LLM prompt and ``suggest_defaults()``
+    fills ambiguous rule-based parameters.
+
     Args:
         analysis: Complete video analysis.
         instruction: Natural language editing instruction.
         llm_model: LLM model to use for planning.
         use_llm: Whether to use LLM for planning (requires API key).
+        preferences: Optional UserPreferences for personalization.
 
     Returns:
         EditPlan with ordered operations.
@@ -55,7 +69,10 @@ def create_edit_plan(
     config = load_config()
     if config.openai_api_key and use_llm:
         try:
-            llm_plan = _plan_with_llm(analysis, instruction, llm_model, config.openai_api_key)
+            llm_plan = _plan_with_llm(
+                analysis, instruction, llm_model, config.openai_api_key,
+                preferences=preferences,
+            )
             return llm_plan
         except Exception as exc:
             logger.warning("LLM planning failed: %s. Using rule-based fallback.", exc)
@@ -82,6 +99,8 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
     lower = instruction.lower()
     operations: list = []
     summary_parts: list[str] = []
+
+    # ── Cut rules ────────────────────────────────────────────────────────
 
     # Rule: Remove silence
     if _matches_any(lower, ["remove silence", "무음 제거", "cut silence", "무음 삭제", "delete silence"]):
@@ -153,10 +172,85 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
         operations.extend(trim_ops)
         summary_parts.append(f"Trim to {target_minutes} minutes")
 
+    # ── Color grading rules ──────────────────────────────────────────────
+
+    if _matches_any(lower, ["밝게", "bright", "밝은 느낌", "밝은 톤"]):
+        operations.append(ColorGradeOperation(preset="bright"))
+        summary_parts.append("Apply bright color grade")
+
+    elif _matches_any(lower, ["따뜻하게", "warm", "따뜻한 느낌", "따뜻한 톤"]):
+        operations.append(ColorGradeOperation(preset="warm"))
+        summary_parts.append("Apply warm color grade")
+
+    elif _matches_any(lower, ["시네마틱", "cinematic", "영화 느낌", "영화같이"]):
+        operations.append(ColorGradeOperation(preset="cinematic"))
+        summary_parts.append("Apply cinematic color grade")
+
+    elif _matches_any(lower, ["빈티지", "vintage", "레트로", "retro"]):
+        operations.append(ColorGradeOperation(preset="vintage"))
+        summary_parts.append("Apply vintage color grade")
+
+    elif _matches_any(lower, ["차갑게", "cool", "차가운 느낌", "쿨톤"]):
+        operations.append(ColorGradeOperation(preset="cool"))
+        summary_parts.append("Apply cool color grade")
+
+    # ── BGM rules ────────────────────────────────────────────────────────
+
+    if _matches_any(lower, ["bgm", "배경음악", "음악 넣", "음악 추가", "배경 음악"]):
+        mood = _detect_bgm_mood(lower)
+        operations.append(BGMOperation(mood=mood))
+        summary_parts.append(f"Add BGM (mood={mood})")
+
+    # ── Speed rules ──────────────────────────────────────────────────────
+
+    speed_match = re.search(r"(\d+(?:\.\d+)?)\s*배속", lower)
+    if speed_match:
+        factor = float(speed_match.group(1))
+        operations.append(SpeedOperation(
+            factor=factor,
+            start_time=0,
+            end_time=analysis.duration,
+        ))
+        summary_parts.append(f"Speed ×{factor}")
+    elif _matches_any(lower, ["빠르게", "speed up", "fast", "faster"]):
+        operations.append(SpeedOperation(
+            factor=2.0,
+            start_time=0,
+            end_time=analysis.duration,
+        ))
+        summary_parts.append("Speed ×2.0")
+    elif _matches_any(lower, ["느리게", "slow", "슬로우", "slower", "slow motion"]):
+        operations.append(SpeedOperation(
+            factor=0.5,
+            start_time=0,
+            end_time=analysis.duration,
+        ))
+        summary_parts.append("Speed ×0.5 (slow motion)")
+
+    # ── Transition rules ─────────────────────────────────────────────────
+
+    if _matches_any(lower, ["페이드", "fade", "전환 효과", "트랜지션", "transition"]):
+        style: str = "fade"
+        if _matches_any(lower, ["dissolve", "디졸브"]):
+            style = "dissolve"
+        elif _matches_any(lower, ["wipe", "와이프"]):
+            style = "wipe"
+
+        # Add transitions between all consecutive scenes
+        for i in range(len(analysis.scenes) - 1):
+            operations.append(TransitionOperation(
+                style=style,
+                duration=0.5,
+                between=(i, i + 1),
+            ))
+        if analysis.scenes:
+            summary_parts.append(f"Add {style} transitions between scenes")
+
+    # ── Return ───────────────────────────────────────────────────────────
+
     if not operations:
         return None
 
-    # Calculate estimated duration
     estimated = _estimate_duration(analysis, operations)
 
     return EditPlan(
@@ -167,13 +261,42 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
     )
 
 
+def _detect_bgm_mood(text: str) -> str:
+    """Detect BGM mood from instruction text.
+
+    Args:
+        text: Lowercased instruction text.
+
+    Returns:
+        Mood string matching BGMOperation.mood literals.
+    """
+    mood_keywords: dict[str, list[str]] = {
+        "upbeat": ["신나는", "upbeat", "energetic", "활기", "밝은 음악", "경쾌"],
+        "calm": ["잔잔한", "calm", "peaceful", "편안", "차분"],
+        "dramatic": ["드라마틱", "dramatic", "epic", "웅장", "긴장"],
+        "funny": ["재밌는", "funny", "comedy", "코믹", "유머"],
+        "emotional": ["감성", "emotional", "감동", "슬픈", "sad"],
+    }
+
+    for mood, keywords in mood_keywords.items():
+        if _matches_any(text, keywords):
+            return mood
+
+    return "calm"  # Default mood
+
+
 def _plan_with_llm(
     analysis: VideoAnalysis,
     instruction: str,
     model: str,
     api_key: str,
+    preferences: "UserPreferences | None" = None,
 ) -> EditPlan:
-    """Create an edit plan using OpenAI's API."""
+    """Create an edit plan using OpenAI's API.
+
+    When *preferences* are provided, few-shot examples and suggested
+    defaults are appended to the user message for better personalization.
+    """
     from openai import OpenAI
 
     client = OpenAI(api_key=api_key)
@@ -213,6 +336,30 @@ def _plan_with_llm(
         f"## Video Analysis\n```json\n{json.dumps(analysis_summary, ensure_ascii=False, indent=2)}\n```\n\n"
         f"## Editing Instruction\n{instruction}"
     )
+
+    # Inject personalization from learning history
+    if preferences is not None:
+        try:
+            from cutai.learning import get_few_shot_examples, suggest_defaults
+
+            examples = get_few_shot_examples(preferences, instruction, max_examples=3)
+            if examples:
+                examples_text = "\n".join(
+                    f"- Instruction: \"{ex.instruction}\" → Operations: {', '.join(ex.operations_summary)}"
+                    for ex in examples
+                )
+                user_message += (
+                    f"\n\n## User's Past Editing Preferences (few-shot examples)\n{examples_text}"
+                )
+
+            defaults = suggest_defaults(preferences)
+            if defaults:
+                defaults_text = ", ".join(f"{k}={v}" for k, v in defaults.items())
+                user_message += (
+                    f"\n\n## Suggested Defaults (from user history)\n{defaults_text}"
+                )
+        except Exception as exc:
+            logger.debug("Failed to inject preferences into LLM prompt: %s", exc)
 
     logger.info("Calling %s for edit planning...", model)
 
@@ -261,7 +408,43 @@ def _parse_llm_response(data: dict, instruction: str) -> EditPlan:
                     position=op_data.get("position", "bottom"),
                 )
             )
-        # Phase 2 types — just skip them for now
+        elif op_type == "bgm":
+            operations.append(
+                BGMOperation(
+                    mood=op_data.get("mood", "calm"),
+                    volume=float(op_data.get("volume", 15.0)),
+                    fade_in=float(op_data.get("fade_in", 2.0)),
+                    fade_out=float(op_data.get("fade_out", 2.0)),
+                )
+            )
+        elif op_type == "colorgrade":
+            operations.append(
+                ColorGradeOperation(
+                    preset=op_data.get("preset", "bright"),
+                    intensity=float(op_data.get("intensity", 50.0)),
+                )
+            )
+        elif op_type == "transition":
+            between = op_data.get("between", [0, 1])
+            if isinstance(between, list) and len(between) == 2:
+                between_tuple = (int(between[0]), int(between[1]))
+            else:
+                between_tuple = (0, 1)
+            operations.append(
+                TransitionOperation(
+                    style=op_data.get("style", "fade"),
+                    duration=float(op_data.get("duration", 0.5)),
+                    between=between_tuple,
+                )
+            )
+        elif op_type == "speed":
+            operations.append(
+                SpeedOperation(
+                    factor=float(op_data.get("factor", 1.0)),
+                    start_time=float(op_data.get("start_time", 0)),
+                    end_time=float(op_data.get("end_time", 0)),
+                )
+            )
         else:
             logger.debug("Skipping unsupported operation type: %s", op_type)
 
@@ -292,10 +475,9 @@ def _trim_to_duration(analysis: VideoAnalysis, target_seconds: float) -> list[Cu
             score += 30.0
         # Energy scoring: dB is negative, closer to 0 = louder = more interesting
         if scene.avg_energy < 0:
-            # -60dB → 0 points, -10dB → 50 points
             score += max(0, (60 + scene.avg_energy))
         elif scene.avg_energy == 0:
-            score += 10  # No data — give neutral score, don't penalize
+            score += 10
         scored.append((scene, score))
 
     # Sort by score (lowest first — candidates for removal)
@@ -324,11 +506,18 @@ def _trim_to_duration(analysis: VideoAnalysis, target_seconds: float) -> list[Cu
 def _estimate_duration(analysis: VideoAnalysis, operations: list) -> float:
     """Estimate the output duration after applying operations."""
     removed = 0.0
+    speed_factor = 1.0
+
     for op in operations:
         if isinstance(op, CutOperation) and op.action == "remove":
             removed += op.end_time - op.start_time
+        elif isinstance(op, SpeedOperation):
+            # Simplistic: if whole-video speed, apply factor to total
+            if op.start_time <= 0.05:
+                speed_factor = op.factor
 
-    return max(0, analysis.duration - removed)
+    base_duration = max(0, analysis.duration - removed)
+    return base_duration / speed_factor if speed_factor > 0 else base_duration
 
 
 def _matches_any(text: str, patterns: list[str]) -> bool:

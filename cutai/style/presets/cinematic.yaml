@@ -1,0 +1,28 @@
+name: cinematic
+description: Cinematic editing style — slow pacing, desaturated tones, dramatic transitions
+source: preset
+rhythm:
+  avg_cut_length: 6.0
+  cut_length_variance: 3.0
+  pacing_curve: slow-fast-slow
+  cuts_per_minute: 6.0
+transitions:
+  jump_cut_ratio: 0.5
+  fade_ratio: 0.3
+  dissolve_ratio: 0.15
+  wipe_ratio: 0.05
+  avg_transition_duration: 1.0
+visual:
+  avg_brightness: -0.1
+  avg_saturation: 0.8
+  avg_contrast: 1.2
+  color_temperature: cool
+audio:
+  has_bgm: true
+  bgm_volume_ratio: 0.2
+  silence_tolerance: 2.0
+  speech_ratio: 0.4
+subtitle:
+  has_subtitles: false
+  position: bottom
+  font_size_category: medium

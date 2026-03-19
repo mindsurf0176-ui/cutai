@@ -1,0 +1,28 @@
+name: vlog-casual
+description: Casual vlog editing style — quick cuts, warm colors, subtitles
+source: preset
+rhythm:
+  avg_cut_length: 4.0
+  cut_length_variance: 2.0
+  pacing_curve: slow-fast-slow
+  cuts_per_minute: 12.0
+transitions:
+  jump_cut_ratio: 0.85
+  fade_ratio: 0.10
+  dissolve_ratio: 0.05
+  wipe_ratio: 0.0
+  avg_transition_duration: 0.3
+visual:
+  avg_brightness: 0.05
+  avg_saturation: 1.1
+  avg_contrast: 1.05
+  color_temperature: warm
+audio:
+  has_bgm: true
+  bgm_volume_ratio: 0.12
+  silence_tolerance: 0.8
+  speech_ratio: 0.65
+subtitle:
+  has_subtitles: true
+  position: bottom
+  font_size_category: large

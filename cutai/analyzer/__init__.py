@@ -191,6 +191,31 @@ def _get_video_metadata(video_path: str) -> dict:
     }
 
 
+def analyze_with_engagement(
+    video_path: str,
+    **kwargs,
+) -> tuple[VideoAnalysis, "EngagementReport"]:
+    """Run full analysis plus engagement scoring.
+
+    Convenience wrapper that chains ``analyze_video`` with
+    ``compute_engagement_scores``.
+
+    Args:
+        video_path: Path to the video file.
+        **kwargs: Forwarded to ``analyze_video`` (whisper_model, etc.).
+
+    Returns:
+        A tuple of (VideoAnalysis, EngagementReport).
+    """
+    analysis = analyze_video(video_path, **kwargs)
+
+    from cutai.analyzer.engagement import compute_engagement_scores
+    from cutai.models.types import EngagementReport  # noqa: F811
+
+    engagement = compute_engagement_scores(analysis, video_path)
+    return analysis, engagement
+
+
 def _is_scene_silent(scene, quality) -> bool:
     """Check if a scene overlaps significantly with silent segments."""
     from cutai.models.types import QualityReport

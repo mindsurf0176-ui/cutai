@@ -211,22 +211,28 @@ def plan(
 @app.command()
 def edit(
     video: str = typer.Argument(help="Path to the video file"),
-    instruction: str = typer.Option(..., "--instruction", "-i", help="Natural language editing instruction"),
+    instruction: str = typer.Option("", "--instruction", "-i", help="Natural language editing instruction"),
     output: str | None = typer.Option(None, "--output", "-o", help="Output video file path"),
     model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
     llm: str = typer.Option("gpt-4o", "--llm", help="LLM model for planning"),
     no_llm: bool = typer.Option(False, "--no-llm", help="Use rule-based planning only"),
     skip_transcription: bool = typer.Option(False, "--no-transcript", help="Skip Whisper transcription"),
     burn_subtitles: bool = typer.Option(False, "--burn-subtitles", help="Burn subtitles into video (slow, re-encodes). Default: save as .ass sidecar file"),
+    style: str | None = typer.Option(None, "--style", "-s", help="Edit DNA style file (.yaml) to apply instead of instruction-based planning"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
 ) -> None:
     """Full pipeline: analyze → plan → edit → render.
 
-    Example:
+    Examples:
         cutai edit video.mp4 -i "remove silence and add subtitles"
+        cutai edit video.mp4 --style vlog-casual.yaml
     """
     _setup_logging(verbose)
     video_path = _validate_video(video)
+
+    if not instruction and not style:
+        console.print("[red]Error:[/red] Provide --instruction or --style (or both).")
+        raise typer.Exit(1)
 
     # Default output path
     if not output:
@@ -234,18 +240,17 @@ def edit(
         output = str(video_path.parent / f"{stem}_edited.mp4")
 
     try:
-        console.print(
-            Panel(
-                f"🎬 Editing [bold]{video_path.name}[/bold]\n"
-                f"📝 Instruction: [italic]{instruction}[/italic]\n"
-                f"📁 Output: [dim]{output}[/dim]",
-                style="blue",
-            )
-        )
+        desc = f"🎬 Editing [bold]{video_path.name}[/bold]\n"
+        if style:
+            desc += f"🧬 Style: [italic]{style}[/italic]\n"
+        if instruction:
+            desc += f"📝 Instruction: [italic]{instruction}[/italic]\n"
+        desc += f"📁 Output: [dim]{output}[/dim]"
+
+        console.print(Panel(desc, style="blue"))
 
         from cutai.analyzer import analyze_video
         from cutai.editor.renderer import render
-        from cutai.planner import create_edit_plan
 
         with Progress(
             SpinnerColumn(),
@@ -261,14 +266,22 @@ def edit(
             )
             progress.update(t1, completed=True)
 
-            # Step 2: Plan
+            # Step 2: Plan (style-based or instruction-based)
             t2 = progress.add_task("Step 2/3: Generating edit plan...", total=None)
-            edit_plan = create_edit_plan(
-                analysis,
-                instruction,
-                llm_model=llm,
-                use_llm=not no_llm,
-            )
+            if style:
+                from cutai.style import apply_style, load_style
+
+                style_dna = load_style(style)
+                edit_plan = apply_style(analysis, style_dna, instruction=instruction)
+            else:
+                from cutai.planner import create_edit_plan
+
+                edit_plan = create_edit_plan(
+                    analysis,
+                    instruction,
+                    llm_model=llm,
+                    use_llm=not no_llm,
+                )
             progress.update(t2, completed=True)
 
             # Step 3: Render
@@ -301,7 +314,760 @@ def edit(
         _handle_error(exc)
 
 
+# ── Style commands ───────────────────────────────────────────────────────────
+
+
+@app.command()
+def engagement(
+    video: str = typer.Argument(help="Path to the video file"),
+    output: str | None = typer.Option(None, "--output", "-o", help="Save engagement report as JSON"),
+    model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
+) -> None:
+    """Analyze scene engagement scores for a video."""
+    _setup_logging(verbose)
+    video_path = _validate_video(video)
+
+    try:
+        console.print(
+            Panel(f"📊 Analyzing engagement for [bold]{video_path.name}[/bold]", style="blue")
+        )
+
+        from cutai.analyzer import analyze_with_engagement
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Analyzing engagement...", total=None)
+            analysis, report = analyze_with_engagement(
+                str(video_path), whisper_model=model,
+            )
+            progress.update(task, completed=True)
+
+        _display_engagement(analysis, report)
+
+        if output:
+            out_path = Path(output)
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(out_path, "w") as f:
+                json.dump(report.model_dump(), f, indent=2, ensure_ascii=False)
+            console.print(f"\n📄 Report saved to [bold]{output}[/bold]")
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _handle_error(exc)
+
+
+@app.command()
+def highlights(
+    video: str = typer.Argument(help="Path to the video file"),
+    output: str | None = typer.Option(None, "--output", "-o", help="Output video path"),
+    duration: float | None = typer.Option(None, "--duration", "-d", help="Target duration in seconds"),
+    ratio: float = typer.Option(0.2, "--ratio", help="Fraction of video to keep (0.0-1.0)"),
+    style: str = typer.Option("best-moments", "--style", "-s", help="Highlight style: best-moments, narrative, shorts"),
+    model: str = typer.Option("base", "--model", "-m", help="Whisper model"),
+    no_render: bool = typer.Option(False, "--no-render", help="Only show plan, don't render"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
+) -> None:
+    """Generate a highlight reel from the most engaging moments."""
+    _setup_logging(verbose)
+    video_path = _validate_video(video)
+
+    if not output:
+        stem = video_path.stem
+        output = str(video_path.parent / f"{stem}_highlights.mp4")
+
+    try:
+        console.print(
+            Panel(
+                f"🎬 Generating [bold]{style}[/bold] highlights for [bold]{video_path.name}[/bold]\n"
+                f"📁 Output: [dim]{output}[/dim]",
+                style="blue",
+            )
+        )
+
+        from cutai.analyzer import analyze_with_engagement
+        from cutai.highlight import auto_highlight_duration, generate_highlights as gen_hl
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            t1 = progress.add_task("Step 1/3: Analyzing video + engagement...", total=None)
+            analysis, report = analyze_with_engagement(
+                str(video_path), whisper_model=model,
+            )
+            progress.update(t1, completed=True)
+
+            # Determine target duration
+            target = duration
+            if target is None and ratio < 1.0:
+                target = analysis.duration * ratio
+            if target is None:
+                target = auto_highlight_duration(analysis.duration)
+
+            t2 = progress.add_task("Step 2/3: Selecting highlights...", total=None)
+            edit_plan = gen_hl(
+                str(video_path),
+                analysis,
+                report,
+                target_duration=target,
+                target_ratio=ratio,
+                style=style,
+            )
+            progress.update(t2, completed=True)
+
+        _display_engagement(analysis, report)
+        _display_plan(edit_plan)
+
+        if no_render:
+            console.print("\n[yellow]--no-render: skipping render step[/yellow]")
+        else:
+            from cutai.editor.renderer import render
+
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                t3 = progress.add_task("Step 3/3: Rendering highlights...", total=None)
+                result = render(str(video_path), edit_plan, analysis, output)
+                progress.update(t3, completed=True)
+
+            console.print()
+            console.print(
+                Panel(
+                    f"✅ [bold green]Highlights ready![/bold green]\n📁 Output: [bold]{result}[/bold]",
+                    style="green",
+                )
+            )
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _handle_error(exc)
+
+
+@app.command()
+def style_extract(
+    video: str = typer.Argument(help="Video to extract style from"),
+    output: str = typer.Option("style.yaml", "--output", "-o", help="Output YAML path"),
+    name: str = typer.Option("", "--name", "-n", help="Style name"),
+    model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
+) -> None:
+    """Extract editing style (Edit DNA) from a reference video."""
+    _setup_logging(verbose)
+    video_path = _validate_video(video)
+
+    try:
+        console.print(
+            Panel(f"🧬 Extracting style from [bold]{video_path.name}[/bold]", style="blue")
+        )
+
+        from cutai.style import extract_style, save_style
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Extracting Edit DNA...", total=None)
+            dna = extract_style(str(video_path), whisper_model=model)
+            if name:
+                dna.name = name
+            progress.update(task, completed=True)
+
+        save_path = save_style(dna, output)
+
+        _display_dna(dna)
+
+        console.print()
+        console.print(
+            Panel(
+                f"✅ [bold green]Style extracted![/bold green]\n📄 Saved to [bold]{save_path}[/bold]",
+                style="green",
+            )
+        )
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _handle_error(exc)
+
+
+@app.command()
+def style_apply(
+    video: str = typer.Argument(help="Video to apply style to"),
+    style_file: str = typer.Option(..., "--style", "-s", help="Style YAML file"),
+    output: str | None = typer.Option(None, "--output", "-o", help="Output video path"),
+    instruction: str = typer.Option("", "--instruction", "-i", help="Additional instruction"),
+    model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
+    burn_subtitles: bool = typer.Option(False, "--burn-subtitles", help="Burn subtitles into video"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
+) -> None:
+    """Apply an Edit DNA style to a video."""
+    _setup_logging(verbose)
+    video_path = _validate_video(video)
+
+    if not output:
+        stem = video_path.stem
+        output = str(video_path.parent / f"{stem}_styled.mp4")
+
+    try:
+        console.print(
+            Panel(
+                f"🎬 Applying style to [bold]{video_path.name}[/bold]\n"
+                f"🧬 Style: [italic]{style_file}[/italic]\n"
+                f"📁 Output: [dim]{output}[/dim]",
+                style="blue",
+            )
+        )
+
+        from cutai.analyzer import analyze_video
+        from cutai.editor.renderer import render
+        from cutai.style import apply_style, load_style
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            t1 = progress.add_task("Step 1/3: Analyzing video...", total=None)
+            analysis = analyze_video(str(video_path), whisper_model=model)
+            progress.update(t1, completed=True)
+
+            t2 = progress.add_task("Step 2/3: Applying style...", total=None)
+            style_dna = load_style(style_file)
+            edit_plan = apply_style(analysis, style_dna, instruction=instruction)
+            progress.update(t2, completed=True)
+
+            t3 = progress.add_task("Step 3/3: Rendering video...", total=None)
+            result = render(str(video_path), edit_plan, analysis, output, burn_subtitles=burn_subtitles)
+            progress.update(t3, completed=True)
+
+        _display_analysis(analysis)
+        _display_plan(edit_plan)
+
+        console.print()
+        console.print(
+            Panel(
+                f"✅ [bold green]Done![/bold green]\n📁 Output: [bold]{result}[/bold]",
+                style="green",
+            )
+        )
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _handle_error(exc)
+
+
+@app.command()
+def style_learn(
+    videos: list[str] = typer.Argument(help="Videos to learn style from"),
+    output: str = typer.Option("learned_style.yaml", "--output", "-o", help="Output YAML path"),
+    name: str = typer.Option("learned", "--name", "-n", help="Style name"),
+    model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
+) -> None:
+    """Learn editing style from multiple reference videos."""
+    _setup_logging(verbose)
+
+    # Validate all video paths
+    for v in videos:
+        _validate_video(v)
+
+    try:
+        console.print(
+            Panel(
+                f"🧬 Learning style from [bold]{len(videos)}[/bold] video(s)",
+                style="blue",
+            )
+        )
+
+        from cutai.style import learn_style, save_style
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Learning Edit DNA...", total=None)
+            dna = learn_style(videos, name=name, whisper_model=model)
+            progress.update(task, completed=True)
+
+        save_path = save_style(dna, output)
+
+        _display_dna(dna)
+
+        console.print()
+        console.print(
+            Panel(
+                f"✅ [bold green]Style learned![/bold green]\n📄 Saved to [bold]{save_path}[/bold]",
+                style="green",
+            )
+        )
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _handle_error(exc)
+
+
+@app.command()
+def chat(
+    video: str = typer.Argument(help="Path to the video file"),
+    model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
+    llm: str = typer.Option("gpt-4o", "--llm", help="LLM model for planning"),
+    no_llm: bool = typer.Option(False, "--no-llm", help="Rule-based planning only"),
+    output: str | None = typer.Option(None, "--output", "-o", help="Default output path for /render"),
+    skip_transcription: bool = typer.Option(False, "--no-transcript", help="Skip Whisper transcription"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
+) -> None:
+    """Interactive chat-based video editing session.
+
+    Launch an interactive REPL where you can iteratively refine edits
+    through natural language. Supports undo, preview, and style loading.
+
+    Examples:
+        cutai chat video.mp4
+        cutai chat video.mp4 --no-llm
+        cutai chat video.mp4 -o output.mp4
+    """
+    _setup_logging(verbose)
+    video_path = _validate_video(video)
+
+    try:
+        from cutai.analyzer import analyze_video
+        from cutai.chat import ChatSession
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Analyzing video...", total=None)
+            analysis = analyze_video(
+                str(video_path),
+                whisper_model=model,
+                skip_transcription=skip_transcription,
+            )
+            progress.update(task, completed=True)
+
+        session = ChatSession(
+            video_path=str(video_path),
+            analysis=analysis,
+            whisper_model=model,
+            llm_model=llm,
+            use_llm=not no_llm,
+            default_output=output,
+        )
+        session.run()
+    except (SystemExit, KeyboardInterrupt):
+        pass
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _handle_error(exc)
+
+
+@app.command()
+def preview(
+    video: str = typer.Argument(help="Path to the video file"),
+    instruction: str = typer.Option(..., "--instruction", "-i", help="Natural language editing instruction"),
+    output: str | None = typer.Option(None, "--output", "-o", help="Output preview path"),
+    resolution: int = typer.Option(360, "--resolution", "-r", help="Preview resolution (height in px)"),
+    model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
+    llm: str = typer.Option("gpt-4o", "--llm", help="LLM model for planning"),
+    no_llm: bool = typer.Option(False, "--no-llm", help="Rule-based planning only"),
+    style: str | None = typer.Option(None, "--style", "-s", help="Edit DNA style file (.yaml)"),
+    skip_transcription: bool = typer.Option(False, "--no-transcript", help="Skip Whisper transcription"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
+) -> None:
+    """Generate a quick low-resolution preview of an edit.
+
+    Downscales the source video first, then applies the edit plan.
+    Much faster than full rendering — great for iterating on edits.
+
+    Examples:
+        cutai preview video.mp4 -i "remove silence"
+        cutai preview video.mp4 -i "시네마틱하게" -r 480
+        cutai preview video.mp4 -i "trim to 3 minutes" --style vlog.yaml
+    """
+    _setup_logging(verbose)
+    video_path = _validate_video(video)
+
+    try:
+        console.print(
+            Panel(
+                f"🎬 Preview for [bold]{video_path.name}[/bold] ({resolution}p)\n"
+                f"📝 Instruction: [italic]{instruction}[/italic]",
+                style="blue",
+            )
+        )
+
+        from cutai.analyzer import analyze_video
+        from cutai.preview import render_preview
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            # Step 1: Analyze
+            t1 = progress.add_task("Analyzing video...", total=None)
+            analysis = analyze_video(
+                str(video_path),
+                whisper_model=model,
+                skip_transcription=skip_transcription,
+            )
+            progress.update(t1, completed=True)
+
+            # Step 2: Plan
+            t2 = progress.add_task("Generating edit plan...", total=None)
+            if style:
+                from cutai.style import apply_style, load_style
+
+                style_dna = load_style(style)
+                edit_plan = apply_style(analysis, style_dna, instruction=instruction)
+            else:
+                from cutai.planner import create_edit_plan
+
+                edit_plan = create_edit_plan(
+                    analysis,
+                    instruction,
+                    llm_model=llm,
+                    use_llm=not no_llm,
+                )
+            progress.update(t2, completed=True)
+
+            # Step 3: Render preview
+            t3 = progress.add_task(f"Rendering preview ({resolution}p)...", total=None)
+            result = render_preview(
+                str(video_path),
+                edit_plan,
+                analysis,
+                output_path=output,
+                resolution=resolution,
+            )
+            progress.update(t3, completed=True)
+
+        _display_plan(edit_plan)
+
+        console.print()
+        console.print(
+            Panel(
+                f"✅ [bold green]Preview ready![/bold green]\n📁 Output: [bold]{result}[/bold]",
+                style="green",
+            )
+        )
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _handle_error(exc)
+
+
+@app.command()
+def multi(
+    videos: list[str] = typer.Argument(help="Video files to combine"),
+    instruction: str = typer.Option("", "--instruction", "-i", help="Editing instruction"),
+    output: str = typer.Option("combined_output.mp4", "--output", "-o", help="Output video path"),
+    model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
+    llm: str = typer.Option("gpt-4o", "--llm", help="LLM model for planning"),
+    no_llm: bool = typer.Option(False, "--no-llm", help="Rule-based planning only"),
+    style: str | None = typer.Option(None, "--style", "-s", help="Edit DNA style file (.yaml)"),
+    burn_subtitles: bool = typer.Option(False, "--burn-subtitles", help="Burn subtitles into video"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
+) -> None:
+    """Combine and edit multiple video files into one.
+
+    Examples:
+        cutai multi clip1.mp4 clip2.mp4 clip3.mp4
+        cutai multi clip1.mp4 clip2.mp4 -i "remove silence and add subtitles"
+        cutai multi *.mp4 --style vlog.yaml -o final.mp4
+    """
+    _setup_logging(verbose)
+
+    if len(videos) < 2:
+        console.print("[red]Error:[/red] At least 2 video files are required.")
+        raise typer.Exit(1)
+
+    for v in videos:
+        _validate_video(v)
+
+    try:
+        desc = f"🎬 Multi-edit: combining [bold]{len(videos)}[/bold] videos\n"
+        if instruction:
+            desc += f"📝 Instruction: [italic]{instruction}[/italic]\n"
+        if style:
+            desc += f"🧬 Style: [italic]{style}[/italic]\n"
+        desc += f"📁 Output: [dim]{output}[/dim]"
+
+        console.print(Panel(desc, style="blue"))
+
+        from cutai.multi import multi_edit
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Processing multi-video edit...", total=None)
+            result = multi_edit(
+                video_paths=videos,
+                instruction=instruction,
+                output_path=output,
+                whisper_model=model,
+                llm_model=llm,
+                use_llm=not no_llm,
+                style=style,
+            )
+            progress.update(task, completed=True)
+
+        console.print()
+        console.print(
+            Panel(
+                f"✅ [bold green]Done![/bold green]\n📁 Output: [bold]{result}[/bold]",
+                style="green",
+            )
+        )
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _handle_error(exc)
+
+
+@app.command()
+def prefs(
+    reset: bool = typer.Option(False, "--reset", help="Reset all learned preferences"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
+) -> None:
+    """Show or reset learned editing preferences.
+
+    CutAI learns from your editing patterns over time.
+    Use --reset to clear all learned preferences.
+    """
+    _setup_logging(verbose)
+
+    try:
+        from cutai.learning import (
+            UserPreferences,
+            load_preferences,
+            save_preferences,
+            suggest_defaults,
+        )
+
+        if reset:
+            new_prefs = UserPreferences()
+            save_preferences(new_prefs)
+            console.print("[green]✅ Preferences reset to defaults.[/green]")
+            return
+
+        prefs_data = load_preferences()
+        defaults = suggest_defaults(prefs_data)
+
+        # Display preferences
+        prefs_table = Table(
+            title="🧠 Learned Editing Preferences",
+            show_header=True,
+            header_style="bold cyan",
+        )
+        prefs_table.add_column("Property", style="dim")
+        prefs_table.add_column("Value")
+
+        prefs_table.add_row("Preferred style", prefs_data.preferred_style or "(none)")
+        prefs_table.add_row("Subtitle position", prefs_data.preferred_subtitle_position)
+        prefs_table.add_row("Color preset", prefs_data.preferred_color_preset or "(none)")
+        prefs_table.add_row("BGM mood", prefs_data.preferred_bgm_mood or "(none)")
+        prefs_table.add_row("Avg keep ratio", f"{prefs_data.avg_keep_ratio:.0%}")
+        prefs_table.add_row("Instruction history", f"{len(prefs_data.instruction_history)} entries")
+        prefs_table.add_row("Feedback entries", f"{len(prefs_data.feedback_history)} entries")
+
+        console.print()
+        console.print(prefs_table)
+
+        if defaults:
+            defaults_table = Table(
+                title="💡 Suggested Defaults",
+                show_header=True,
+                header_style="bold",
+            )
+            defaults_table.add_column("Parameter", style="dim")
+            defaults_table.add_column("Value")
+            for k, v in defaults.items():
+                defaults_table.add_row(k, str(v))
+            console.print(defaults_table)
+
+        if not prefs_data.instruction_history:
+            console.print(
+                "\n[dim]No editing history yet. Start editing to build preferences![/dim]"
+            )
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _handle_error(exc)
+
+
+@app.command()
+def style_show(
+    style_file: str = typer.Argument(help="Style YAML file to display"),
+) -> None:
+    """Display an Edit DNA style file."""
+    try:
+        from cutai.style import load_style
+
+        dna = load_style(style_file)
+        _display_dna(dna)
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _handle_error(exc)
+
+
 # ── Display helpers ──────────────────────────────────────────────────────────
+
+
+def _display_engagement(analysis, report) -> None:
+    """Display engagement scores as a rich table with colored bars."""
+    from cutai.models.types import EngagementReport
+
+    console.print()
+    console.print(Panel(
+        f"📊 [bold]Engagement Analysis[/bold]\n"
+        f"Average score: {report.avg_score:.1f} | "
+        f"🟢 High: {report.high_count} | "
+        f"🔴 Low: {report.low_count}",
+        style="cyan",
+        title="Engagement Report",
+    ))
+
+    if not report.scenes:
+        return
+
+    table = Table(
+        title="🎯 Scene Engagement Scores",
+        show_header=True,
+        header_style="bold",
+    )
+    table.add_column("#", style="dim", width=4)
+    table.add_column("Time", width=14)
+    table.add_column("Score", width=6, justify="right")
+    table.add_column("Tier", width=6)
+    table.add_column("Bar", width=22)
+    table.add_column("Breakdown", width=36)
+
+    for se in report.scenes:
+        # Find matching scene for time info
+        scene = None
+        for s in analysis.scenes:
+            if s.id == se.scene_id:
+                scene = s
+                break
+
+        time_str = ""
+        if scene:
+            time_str = f"{scene.start_time:.1f}–{scene.end_time:.1f}s"
+
+        # Tier emoji + color
+        if se.label == "high":
+            tier = "🟢"
+            bar_style = "green"
+        elif se.label == "low":
+            tier = "🔴"
+            bar_style = "red"
+        else:
+            tier = "🟡"
+            bar_style = "yellow"
+
+        # Visual bar (20 chars max)
+        filled = int(se.score / 5.0)  # 0-20
+        bar = f"[{bar_style}]{'█' * filled}{'░' * (20 - filled)}[/{bar_style}]"
+
+        # Breakdown
+        breakdown = (
+            f"E:{se.audio_energy_score:.0f} "
+            f"S:{se.speech_density_score:.0f} "
+            f"V:{se.visual_activity_score:.0f} "
+            f"D:{se.duration_fit_score:.0f} "
+            f"A:{se.audio_variety_score:.0f} "
+            f"P:{se.position_score:.0f}"
+        )
+
+        table.add_row(
+            str(se.scene_id),
+            time_str,
+            f"{se.score:.1f}",
+            tier,
+            bar,
+            breakdown,
+        )
+
+    console.print(table)
+    console.print(
+        "[dim]Breakdown: E=Energy S=Speech V=Visual D=Duration A=AudioVar P=Position[/dim]"
+    )
+
+
+def _display_dna(dna) -> None:
+    """Display an EditDNA in a rich panel with tables."""
+    from cutai.models.types import EditDNA
+
+    console.print()
+    console.print(Panel(
+        f"🧬 [bold]{dna.name}[/bold]\n{dna.description}",
+        style="magenta",
+        title="Edit DNA",
+    ))
+
+    # Rhythm
+    rt = Table(title="🥁 Rhythm", show_header=True, header_style="bold")
+    rt.add_column("Property", style="dim")
+    rt.add_column("Value")
+    rt.add_row("Avg cut length", f"{dna.rhythm.avg_cut_length:.1f}s")
+    rt.add_row("Cut length variance", f"{dna.rhythm.cut_length_variance:.2f}s")
+    rt.add_row("Pacing curve", dna.rhythm.pacing_curve)
+    rt.add_row("Cuts per minute", f"{dna.rhythm.cuts_per_minute:.1f}")
+    console.print(rt)
+
+    # Transitions
+    tt = Table(title="🔀 Transitions", show_header=True, header_style="bold")
+    tt.add_column("Type", style="dim")
+    tt.add_column("Ratio")
+    tt.add_row("Jump cut", f"{dna.transitions.jump_cut_ratio:.0%}")
+    tt.add_row("Fade", f"{dna.transitions.fade_ratio:.0%}")
+    tt.add_row("Dissolve", f"{dna.transitions.dissolve_ratio:.0%}")
+    tt.add_row("Wipe", f"{dna.transitions.wipe_ratio:.0%}")
+    tt.add_row("Avg duration", f"{dna.transitions.avg_transition_duration:.1f}s")
+    console.print(tt)
+
+    # Visual
+    vt = Table(title="🎨 Visual", show_header=True, header_style="bold")
+    vt.add_column("Property", style="dim")
+    vt.add_column("Value")
+    vt.add_row("Brightness", f"{dna.visual.avg_brightness:+.3f}")
+    vt.add_row("Saturation", f"{dna.visual.avg_saturation:.3f}")
+    vt.add_row("Contrast", f"{dna.visual.avg_contrast:.3f}")
+    vt.add_row("Temperature", dna.visual.color_temperature)
+    console.print(vt)
+
+    # Audio
+    at = Table(title="🔊 Audio", show_header=True, header_style="bold")
+    at.add_column("Property", style="dim")
+    at.add_column("Value")
+    at.add_row("Has BGM", "✅" if dna.audio.has_bgm else "❌")
+    at.add_row("BGM volume ratio", f"{dna.audio.bgm_volume_ratio:.0%}")
+    at.add_row("Silence tolerance", f"{dna.audio.silence_tolerance:.1f}s")
+    at.add_row("Speech ratio", f"{dna.audio.speech_ratio:.0%}")
+    console.print(at)
+
+    # Subtitles
+    st = Table(title="📝 Subtitles", show_header=True, header_style="bold")
+    st.add_column("Property", style="dim")
+    st.add_column("Value")
+    st.add_row("Has subtitles", "✅" if dna.subtitle.has_subtitles else "❌")
+    st.add_row("Position", dna.subtitle.position)
+    st.add_row("Font size", dna.subtitle.font_size_category)
+    console.print(st)
 
 
 def _display_analysis(analysis) -> None:
