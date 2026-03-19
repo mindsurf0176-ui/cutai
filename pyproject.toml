@@ -33,6 +33,9 @@ dependencies = [
     "openai>=1.0",
     "pydantic>=2.0",
     "pyyaml>=6.0",
+    "fastapi>=0.100",
+    "uvicorn>=0.20",
+    "python-multipart>=0.0.6",
 ]
 
 [project.optional-dependencies]

@@ -1,0 +1,720 @@
+"""CutAI Server — REST API + WebSocket for desktop app integration.
+
+Exposes all CutAI functionality via HTTP endpoints.
+Launch: cutai server --port 18910
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import shutil
+import subprocess
+import tempfile
+import uuid
+from pathlib import Path
+from typing import Any
+
+from fastapi import FastAPI, File, UploadFile, WebSocket, HTTPException, Query, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel
+
+app = FastAPI(title="CutAI", version="0.1.0", description="AI Video Editor API")
+
+# CORS for Tauri (localhost)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Tauri uses tauri://localhost
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+logger = logging.getLogger(__name__)
+
+# ── Storage ──────────────────────────────────────────────────────────────────
+
+UPLOAD_DIR = Path(tempfile.gettempdir()) / "cutai_uploads"
+OUTPUT_DIR = Path(tempfile.gettempdir()) / "cutai_outputs"
+
+# In-memory registries (ephemeral, single-user desktop use)
+videos: dict[str, dict[str, Any]] = {}  # video_id -> {path, original_name, ...}
+jobs: dict[str, dict[str, Any]] = {}    # job_id -> {status, result, error, progress}
+
+
+# ── Request/Response Models ──────────────────────────────────────────────────
+
+
+class AnalyzeRequest(BaseModel):
+    whisper_model: str = "base"
+    skip_transcription: bool = False
+
+
+class PlanRequest(BaseModel):
+    video_id: str
+    instruction: str
+    use_llm: bool = True
+    llm_model: str = "gpt-4o"
+    style_path: str | None = None
+
+
+class RenderRequest(BaseModel):
+    video_id: str
+    plan: dict  # EditPlan as dict
+    burn_subtitles: bool = False
+    bgm_file: str | None = None
+    output_path: str | None = None
+
+
+class HighlightRequest(BaseModel):
+    video_id: str
+    target_duration: float | None = None
+    target_ratio: float = 0.2
+    style: str = "best-moments"
+
+
+class StyleApplyRequest(BaseModel):
+    video_id: str
+    style: dict  # EditDNA as dict
+
+
+class StyleExtractRequest(BaseModel):
+    video_id: str
+
+
+class JobResponse(BaseModel):
+    job_id: str
+    status: str  # pending, running, completed, failed
+    progress: float = 0.0  # 0-100
+    result: dict | None = None
+    error: str | None = None
+
+
+# ── Startup ──────────────────────────────────────────────────────────────────
+
+
+@app.on_event("startup")
+async def startup() -> None:
+    """Ensure upload/output directories exist on startup."""
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
+
+
+def _get_video_or_404(video_id: str) -> dict[str, Any]:
+    """Retrieve video record or raise 404."""
+    if video_id not in videos:
+        raise HTTPException(status_code=404, detail=f"Video not found: {video_id}")
+    return videos[video_id]
+
+
+def _create_job() -> str:
+    """Create a new job entry and return its ID."""
+    job_id = str(uuid.uuid4())
+    jobs[job_id] = {"status": "pending", "result": None, "error": None, "progress": 0.0}
+    return job_id
+
+
+def _get_job_response(job_id: str) -> JobResponse:
+    """Build a JobResponse from the job store."""
+    if job_id not in jobs:
+        raise HTTPException(status_code=404, detail=f"Job not found: {job_id}")
+    j = jobs[job_id]
+    return JobResponse(
+        job_id=job_id,
+        status=j["status"],
+        progress=j.get("progress", 0.0),
+        result=j.get("result"),
+        error=j.get("error"),
+    )
+
+
+# ── 1. Video Management ─────────────────────────────────────────────────────
+
+
+@app.post("/api/videos/upload")
+async def upload_video(file: UploadFile = File(...)) -> dict:
+    """Upload a video file. Returns video_id and basic info."""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
+
+    video_id = str(uuid.uuid4())
+    suffix = Path(file.filename).suffix or ".mp4"
+    dest = UPLOAD_DIR / f"{video_id}{suffix}"
+
+    # Stream file to disk
+    with open(dest, "wb") as f:
+        while chunk := await file.read(1024 * 1024):  # 1MB chunks
+            f.write(chunk)
+
+    # Get basic metadata via ffprobe
+    meta = await asyncio.to_thread(_probe_video, str(dest))
+
+    videos[video_id] = {
+        "path": str(dest),
+        "original_name": file.filename,
+        "duration": meta.get("duration", 0.0),
+        "width": meta.get("width", 0),
+        "height": meta.get("height", 0),
+        "fps": meta.get("fps", 0.0),
+    }
+
+    return {"video_id": video_id, **videos[video_id]}
+
+
+@app.get("/api/videos/{video_id}")
+async def get_video(video_id: str) -> dict:
+    """Get video info (path, duration, etc.)."""
+    info = _get_video_or_404(video_id)
+    return {"video_id": video_id, **info}
+
+
+@app.delete("/api/videos/{video_id}")
+async def delete_video(video_id: str) -> dict:
+    """Delete an uploaded video."""
+    info = _get_video_or_404(video_id)
+    path = Path(info["path"])
+    if path.exists():
+        path.unlink()
+    del videos[video_id]
+    return {"deleted": video_id}
+
+
+@app.get("/api/videos/{video_id}/thumbnail")
+async def get_thumbnail(video_id: str, time: float = Query(0.0, ge=0)) -> FileResponse:
+    """Extract and return a single frame at the given timestamp."""
+    info = _get_video_or_404(video_id)
+    video_path = info["path"]
+
+    # Clamp time to video duration
+    duration = info.get("duration", 0.0)
+    if duration > 0 and time > duration:
+        time = duration - 0.1
+
+    thumb_path = UPLOAD_DIR / f"thumb_{video_id}_{time:.2f}.jpg"
+
+    if not thumb_path.exists():
+        await asyncio.to_thread(_extract_thumbnail, video_path, str(thumb_path), time)
+
+    return FileResponse(str(thumb_path), media_type="image/jpeg")
+
+
+# ── 2. Analysis ──────────────────────────────────────────────────────────────
+
+
+@app.post("/api/videos/{video_id}/analyze")
+async def start_analysis(video_id: str, req: AnalyzeRequest | None = None) -> dict:
+    """Start video analysis as a background task. Returns job_id."""
+    info = _get_video_or_404(video_id)
+    if req is None:
+        req = AnalyzeRequest()
+
+    job_id = _create_job()
+    asyncio.create_task(
+        _run_analysis(job_id, video_id, info["path"], req.whisper_model, req.skip_transcription)
+    )
+    return {"job_id": job_id, "status": "pending"}
+
+
+@app.get("/api/jobs/{job_id}")
+async def get_job(job_id: str) -> JobResponse:
+    """Get job status and result."""
+    return _get_job_response(job_id)
+
+
+async def _run_analysis(
+    job_id: str, video_id: str, video_path: str, whisper_model: str, skip_transcription: bool
+) -> None:
+    """Background task for video analysis."""
+    jobs[job_id]["status"] = "running"
+    jobs[job_id]["progress"] = 10.0
+    try:
+        from cutai.analyzer import analyze_video
+
+        analysis = await asyncio.to_thread(
+            analyze_video,
+            video_path,
+            whisper_model=whisper_model,
+            skip_transcription=skip_transcription,
+        )
+        jobs[job_id]["status"] = "completed"
+        jobs[job_id]["progress"] = 100.0
+        result = analysis.model_dump()
+        jobs[job_id]["result"] = result
+
+        # Cache analysis on the video record
+        videos[video_id]["analysis"] = result
+    except Exception as e:
+        logger.exception("Analysis failed for job %s", job_id)
+        jobs[job_id]["status"] = "failed"
+        jobs[job_id]["error"] = str(e)
+
+
+# ── 3. Planning ──────────────────────────────────────────────────────────────
+
+
+@app.post("/api/plan")
+async def generate_plan(req: PlanRequest) -> dict:
+    """Generate an edit plan from instruction (+ optional style)."""
+    info = _get_video_or_404(req.video_id)
+
+    # Need analysis first
+    analysis_data = info.get("analysis")
+    if not analysis_data:
+        raise HTTPException(
+            status_code=400,
+            detail="Video must be analyzed first. POST /api/videos/{video_id}/analyze",
+        )
+
+    from cutai.models.types import VideoAnalysis
+
+    analysis = VideoAnalysis(**analysis_data)
+
+    if req.style_path:
+        # Style-based planning
+        from cutai.style import apply_style, load_style
+
+        style_dna = await asyncio.to_thread(load_style, req.style_path)
+        edit_plan = await asyncio.to_thread(
+            apply_style, analysis, style_dna, instruction=req.instruction
+        )
+    else:
+        # Instruction-based planning
+        from cutai.planner import create_edit_plan
+
+        edit_plan = await asyncio.to_thread(
+            create_edit_plan,
+            analysis,
+            req.instruction,
+            llm_model=req.llm_model,
+            use_llm=req.use_llm,
+        )
+
+    return edit_plan.model_dump()
+
+
+# ── 4. Rendering ─────────────────────────────────────────────────────────────
+
+
+@app.post("/api/render")
+async def start_render(req: RenderRequest) -> dict:
+    """Start rendering as a background task. Returns job_id."""
+    info = _get_video_or_404(req.video_id)
+
+    analysis_data = info.get("analysis")
+    if not analysis_data:
+        raise HTTPException(
+            status_code=400,
+            detail="Video must be analyzed first. POST /api/videos/{video_id}/analyze",
+        )
+
+    # Determine output path
+    output_path = req.output_path
+    if not output_path:
+        original_name = Path(info.get("original_name", "output.mp4")).stem
+        output_path = str(OUTPUT_DIR / f"{original_name}_{uuid.uuid4().hex[:8]}.mp4")
+
+    job_id = _create_job()
+    asyncio.create_task(
+        _run_render(
+            job_id,
+            info["path"],
+            analysis_data,
+            req.plan,
+            output_path,
+            req.burn_subtitles,
+            req.bgm_file,
+        )
+    )
+    return {"job_id": job_id, "status": "pending"}
+
+
+@app.get("/api/render/{job_id}/download")
+async def download_render(job_id: str) -> FileResponse:
+    """Download the rendered video for a completed render job."""
+    jr = _get_job_response(job_id)
+    if jr.status != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Job is not completed (status={jr.status})",
+        )
+    output_path = jr.result.get("output_path") if jr.result else None
+    if not output_path or not Path(output_path).exists():
+        raise HTTPException(status_code=404, detail="Rendered file not found")
+    return FileResponse(output_path, media_type="video/mp4", filename=Path(output_path).name)
+
+
+async def _run_render(
+    job_id: str,
+    video_path: str,
+    analysis_data: dict,
+    plan_data: dict,
+    output_path: str,
+    burn_subtitles: bool,
+    bgm_file: str | None,
+) -> None:
+    """Background task for video rendering."""
+    jobs[job_id]["status"] = "running"
+    jobs[job_id]["progress"] = 10.0
+    try:
+        from cutai.editor.renderer import render
+        from cutai.models.types import EditPlan, VideoAnalysis
+
+        analysis = VideoAnalysis(**analysis_data)
+        edit_plan = EditPlan(**plan_data)
+
+        result_path = await asyncio.to_thread(
+            render,
+            video_path,
+            edit_plan,
+            analysis,
+            output_path,
+            burn_subtitles=burn_subtitles,
+            bgm_file=bgm_file,
+        )
+
+        jobs[job_id]["status"] = "completed"
+        jobs[job_id]["progress"] = 100.0
+        jobs[job_id]["result"] = {"output_path": result_path}
+    except Exception as e:
+        logger.exception("Render failed for job %s", job_id)
+        jobs[job_id]["status"] = "failed"
+        jobs[job_id]["error"] = str(e)
+
+
+# ── 5. Style ─────────────────────────────────────────────────────────────────
+
+
+@app.get("/api/styles/presets")
+async def list_presets() -> list[dict]:
+    """List available style presets."""
+    presets_dir = Path(__file__).parent / "style" / "presets"
+    result = []
+    if presets_dir.is_dir():
+        for yaml_file in sorted(presets_dir.glob("*.yaml")):
+            from cutai.style import load_style
+
+            try:
+                dna = load_style(str(yaml_file))
+                result.append({
+                    "name": dna.name,
+                    "description": dna.description,
+                    "file": yaml_file.name,
+                })
+            except Exception:
+                logger.warning("Failed to load preset %s", yaml_file.name)
+    return result
+
+
+@app.get("/api/styles/presets/{name}")
+async def get_preset(name: str) -> dict:
+    """Get full details of a style preset."""
+    presets_dir = Path(__file__).parent / "style" / "presets"
+    # Try exact filename or name match
+    candidates = [
+        presets_dir / f"{name}.yaml",
+        presets_dir / name,
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            from cutai.style import load_style
+
+            dna = load_style(str(candidate))
+            return dna.model_dump()
+
+    raise HTTPException(status_code=404, detail=f"Preset not found: {name}")
+
+
+@app.post("/api/styles/extract")
+async def extract_style_endpoint(req: StyleExtractRequest) -> dict:
+    """Extract editing style (Edit DNA) from a video. Returns job_id."""
+    info = _get_video_or_404(req.video_id)
+    job_id = _create_job()
+    asyncio.create_task(_run_style_extract(job_id, info["path"]))
+    return {"job_id": job_id, "status": "pending"}
+
+
+async def _run_style_extract(job_id: str, video_path: str) -> None:
+    """Background task for style extraction."""
+    jobs[job_id]["status"] = "running"
+    jobs[job_id]["progress"] = 10.0
+    try:
+        from cutai.style import extract_style
+
+        dna = await asyncio.to_thread(extract_style, video_path)
+        jobs[job_id]["status"] = "completed"
+        jobs[job_id]["progress"] = 100.0
+        jobs[job_id]["result"] = dna.model_dump()
+    except Exception as e:
+        logger.exception("Style extraction failed for job %s", job_id)
+        jobs[job_id]["status"] = "failed"
+        jobs[job_id]["error"] = str(e)
+
+
+@app.post("/api/styles/apply")
+async def apply_style_endpoint(req: StyleApplyRequest) -> dict:
+    """Apply an Edit DNA style to generate an edit plan."""
+    info = _get_video_or_404(req.video_id)
+
+    analysis_data = info.get("analysis")
+    if not analysis_data:
+        raise HTTPException(
+            status_code=400,
+            detail="Video must be analyzed first. POST /api/videos/{video_id}/analyze",
+        )
+
+    from cutai.models.types import EditDNA, VideoAnalysis
+    from cutai.style import apply_style
+
+    analysis = VideoAnalysis(**analysis_data)
+    style_dna = EditDNA(**req.style)
+
+    edit_plan = await asyncio.to_thread(apply_style, analysis, style_dna)
+    return edit_plan.model_dump()
+
+
+# ── 6. Engagement & Highlights ───────────────────────────────────────────────
+
+
+@app.post("/api/videos/{video_id}/engagement")
+async def compute_engagement(video_id: str) -> dict:
+    """Compute engagement scores. Returns job_id."""
+    info = _get_video_or_404(video_id)
+    job_id = _create_job()
+    asyncio.create_task(_run_engagement(job_id, video_id, info["path"]))
+    return {"job_id": job_id, "status": "pending"}
+
+
+async def _run_engagement(job_id: str, video_id: str, video_path: str) -> None:
+    """Background task for engagement analysis."""
+    jobs[job_id]["status"] = "running"
+    jobs[job_id]["progress"] = 10.0
+    try:
+        from cutai.analyzer import analyze_with_engagement
+
+        analysis, report = await asyncio.to_thread(analyze_with_engagement, video_path)
+        jobs[job_id]["status"] = "completed"
+        jobs[job_id]["progress"] = 100.0
+        jobs[job_id]["result"] = {
+            "analysis": analysis.model_dump(),
+            "engagement": report.model_dump(),
+        }
+
+        # Cache analysis on the video record
+        videos[video_id]["analysis"] = analysis.model_dump()
+    except Exception as e:
+        logger.exception("Engagement analysis failed for job %s", job_id)
+        jobs[job_id]["status"] = "failed"
+        jobs[job_id]["error"] = str(e)
+
+
+@app.post("/api/highlights")
+async def generate_highlights(req: HighlightRequest) -> dict:
+    """Generate highlight reel from engagement analysis. Returns job_id."""
+    info = _get_video_or_404(req.video_id)
+
+    analysis_data = info.get("analysis")
+    if not analysis_data:
+        raise HTTPException(
+            status_code=400,
+            detail="Video must be analyzed first. POST /api/videos/{video_id}/analyze",
+        )
+
+    job_id = _create_job()
+    asyncio.create_task(
+        _run_highlights(job_id, req.video_id, info["path"], analysis_data, req)
+    )
+    return {"job_id": job_id, "status": "pending"}
+
+
+async def _run_highlights(
+    job_id: str,
+    video_id: str,
+    video_path: str,
+    analysis_data: dict,
+    req: HighlightRequest,
+) -> None:
+    """Background task for highlight generation."""
+    jobs[job_id]["status"] = "running"
+    jobs[job_id]["progress"] = 10.0
+    try:
+        from cutai.analyzer.engagement import compute_engagement_scores
+        from cutai.highlight import generate_highlights as gen_hl
+        from cutai.models.types import VideoAnalysis
+
+        analysis = VideoAnalysis(**analysis_data)
+
+        # Compute engagement if not yet done
+        engagement = await asyncio.to_thread(compute_engagement_scores, analysis, video_path)
+
+        jobs[job_id]["progress"] = 50.0
+
+        # Generate highlight plan
+        edit_plan = await asyncio.to_thread(
+            gen_hl,
+            video_path,
+            analysis,
+            engagement,
+            target_duration=req.target_duration,
+            target_ratio=req.target_ratio,
+            style=req.style,
+        )
+
+        jobs[job_id]["status"] = "completed"
+        jobs[job_id]["progress"] = 100.0
+        jobs[job_id]["result"] = edit_plan.model_dump()
+    except Exception as e:
+        logger.exception("Highlight generation failed for job %s", job_id)
+        jobs[job_id]["status"] = "failed"
+        jobs[job_id]["error"] = str(e)
+
+
+# ── 7. WebSocket for Progress ────────────────────────────────────────────────
+
+
+@app.websocket("/ws/progress/{job_id}")
+async def ws_progress(websocket: WebSocket, job_id: str) -> None:
+    """Stream job progress updates via WebSocket."""
+    await websocket.accept()
+
+    if job_id not in jobs:
+        await websocket.send_json({"error": f"Job not found: {job_id}"})
+        await websocket.close()
+        return
+
+    try:
+        prev_progress = -1.0
+        prev_status = ""
+        while True:
+            j = jobs.get(job_id)
+            if not j:
+                await websocket.send_json({"error": "Job disappeared"})
+                break
+
+            # Send update only when state changes
+            current_progress = j.get("progress", 0.0)
+            current_status = j["status"]
+            if current_progress != prev_progress or current_status != prev_status:
+                msg: dict[str, Any] = {
+                    "job_id": job_id,
+                    "status": current_status,
+                    "progress": current_progress,
+                }
+                if current_status == "completed":
+                    msg["result"] = j.get("result")
+                elif current_status == "failed":
+                    msg["error"] = j.get("error")
+                await websocket.send_json(msg)
+                prev_progress = current_progress
+                prev_status = current_status
+
+            # Terminal states — close connection
+            if current_status in ("completed", "failed"):
+                break
+
+            await asyncio.sleep(0.5)
+    except Exception:
+        pass  # Client disconnected
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+
+
+# ── 8. System ────────────────────────────────────────────────────────────────
+
+
+@app.get("/api/health")
+async def health_check() -> dict:
+    """Health check endpoint."""
+    return {
+        "status": "ok",
+        "version": "0.1.0",
+        "videos_loaded": len(videos),
+        "active_jobs": sum(1 for j in jobs.values() if j["status"] == "running"),
+    }
+
+
+@app.get("/api/config")
+async def get_config() -> dict:
+    """Get current CutAI configuration (redacts API keys)."""
+    from cutai.config import load_config
+
+    config = load_config()
+    data = config.model_dump()
+    # Redact sensitive fields
+    if data.get("openai_api_key"):
+        key = data["openai_api_key"]
+        data["openai_api_key"] = f"{key[:8]}...{key[-4:]}" if len(key) > 12 else "***"
+    return data
+
+
+# ── Internal helpers ─────────────────────────────────────────────────────────
+
+
+def _probe_video(video_path: str) -> dict[str, Any]:
+    """Get basic video metadata using ffprobe."""
+    from cutai.config import ensure_ffprobe
+
+    ffprobe = ensure_ffprobe()
+    cmd = [
+        ffprobe,
+        "-v", "quiet",
+        "-print_format", "json",
+        "-show_format",
+        "-show_streams",
+        video_path,
+    ]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=30)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+        return {"duration": 0.0, "width": 0, "height": 0, "fps": 0.0}
+
+    data = json.loads(result.stdout)
+
+    video_stream = None
+    for stream in data.get("streams", []):
+        if stream.get("codec_type") == "video":
+            video_stream = stream
+            break
+
+    if not video_stream:
+        return {"duration": 0.0, "width": 0, "height": 0, "fps": 0.0}
+
+    fps_str = video_stream.get("r_frame_rate", "30/1")
+    try:
+        num, den = fps_str.split("/")
+        fps = float(num) / float(den)
+    except (ValueError, ZeroDivisionError):
+        fps = 30.0
+
+    duration = float(data.get("format", {}).get("duration", 0))
+
+    return {
+        "duration": round(duration, 3),
+        "fps": round(fps, 2),
+        "width": int(video_stream.get("width", 0)),
+        "height": int(video_stream.get("height", 0)),
+    }
+
+
+def _extract_thumbnail(video_path: str, output_path: str, time: float) -> None:
+    """Extract a single frame from video at the given timestamp using FFmpeg."""
+    from cutai.config import ensure_ffmpeg
+
+    ffmpeg = ensure_ffmpeg()
+    cmd = [
+        ffmpeg, "-y",
+        "-ss", str(time),
+        "-i", video_path,
+        "-vframes", "1",
+        "-q:v", "2",
+        output_path,
+    ]
+    subprocess.run(cmd, capture_output=True, check=True, timeout=30)

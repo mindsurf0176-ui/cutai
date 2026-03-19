@@ -909,6 +909,36 @@ def prefs(
 
 
 @app.command()
+def server(
+    port: int = typer.Option(18910, "--port", "-p", help="Server port"),
+    host: str = typer.Option("127.0.0.1", "--host", help="Server host"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
+) -> None:
+    """Start the CutAI API server for desktop app integration."""
+    _setup_logging(verbose)
+    try:
+        import uvicorn
+        from cutai.server import app as api_app
+
+        console.print(
+            Panel(
+                f"🚀 Starting CutAI API server\n"
+                f"🌐 http://{host}:{port}\n"
+                f"📖 Docs: http://{host}:{port}/docs",
+                style="green",
+                title="CutAI Server",
+            )
+        )
+        uvicorn.run(api_app, host=host, port=port, log_level="debug" if verbose else "info")
+    except ImportError as exc:
+        console.print(
+            f"[red]Error:[/red] Missing server dependency: {exc}\n"
+            "Install with: pip install 'cutai[server]' or pip install fastapi uvicorn python-multipart"
+        )
+        raise typer.Exit(1)
+
+
+@app.command()
 def style_show(
     style_file: str = typer.Argument(help="Style YAML file to display"),
 ) -> None:

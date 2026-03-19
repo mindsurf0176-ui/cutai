@@ -1,4 +1,6 @@
-# 🎬 CutAI — AI Video Editor with Natural Language
+# CutAI
+
+> AI video editor with natural language instructions. Local-first, open-source.
 
 > "Film it. Describe the edit. Done."
 
@@ -29,7 +31,7 @@ $ cutai edit vlog.mp4 -i "remove boring parts, add subtitles, make it warm and c
 
 ---
 
-## ✨ Features
+## Features
 
 ### Core Editing
 - **Natural language instructions** — describe edits in English or Korean
@@ -41,7 +43,7 @@ $ cutai edit vlog.mp4 -i "remove boring parts, add subtitles, make it warm and c
 - **Transitions** — fade, dissolve, wipe between scenes
 - **Speed control** — speed up, slow down, or set custom playback rates
 
-### 🧬 Edit Style Transfer
+### Edit Style Transfer
 
 Extract the "editing DNA" from any video and apply it to your footage — like LoRA for video editing.
 
@@ -58,26 +60,26 @@ $ cutai style-learn vid1.mp4 vid2.mp4 vid3.mp4 --name "my-channel" -o channel-st
 
 The Edit DNA captures rhythm (cut pacing, cuts per minute), transitions (fade vs. hard cut ratios), visual tone (brightness, saturation, color temperature), audio mixing (BGM presence, silence tolerance), and subtitle preferences — all as a portable YAML file.
 
-### 🎯 Smart Highlights
+### Smart Highlights
 - **Engagement scoring** — AI scores each scene (0–100) based on audio energy, speech density, visual activity, and pacing
 - **Highlight reels** — auto-generate best-moments, narrative, or shorts-style highlight clips
 - **Duration targeting** — specify output length, and CutAI picks the best scenes to fit
 
-### 💬 Interactive Chat Mode
+### Interactive Chat Mode
 - **REPL-based editing** — iteratively refine edits through conversation
 - **Undo/redo** — full history stack, roll back any edit
 - **Live preview** — generate quick 360p previews before final render
 - **Style loading** — load Edit DNA presets mid-session
 - **Slash commands** — `/preview`, `/render`, `/undo`, `/redo`, `/style`, `/plan`, `/help`
 
-### 🔒 100% Local & Free
+### 100% Local & Free
 - **No cloud uploads** — your videos never leave your machine
 - **Works offline** — use with Ollama for fully air-gapped operation
 - **MIT licensed** — free for personal and commercial use, no usage limits
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -159,7 +161,7 @@ cutai multi day1.mp4 day2.mp4 -i "remove boring parts" --style vlog-casual
 
 ---
 
-## 📖 Commands
+## Commands
 
 | Command | Description |
 |---------|-------------|
@@ -179,7 +181,7 @@ cutai multi day1.mp4 day2.mp4 -i "remove boring parts" --style vlog-casual
 
 ---
 
-## 🧬 Edit Style Transfer — How It Works
+## Edit Style Transfer — How It Works
 
 **The Idea:** Every video editor has a style — how fast they cut, which transitions they use, how they grade colors. CutAI extracts these patterns into a structured "Edit DNA" that can be saved, shared, and applied to other videos.
 
@@ -230,7 +232,7 @@ Create your own presets with `cutai style-extract` or write YAML by hand.
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 ### Config File
 
@@ -273,7 +275,7 @@ cutai prefs --reset
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -339,7 +341,7 @@ cutai/
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
@@ -355,15 +357,15 @@ pytest tests/ -v
 
 ### Ways to Contribute
 
-- 🐛 **Bug reports** — open an issue with reproduction steps
-- 🧬 **Style presets** — create and share Edit DNA presets
-- 🔧 **New edit operations** — add operations in `cutai/editor/`
-- 📖 **Documentation** — improve docs, add examples
-- 🌍 **Translations** — help with i18n for rule-based patterns
+- Bug reports — open an issue with reproduction steps
+- Style presets — create and share Edit DNA presets
+- New edit operations — add operations in `cutai/editor/`
+- Documentation — improve docs, add examples
+- Translations — help with i18n for rule-based patterns
 
 ---
 
-## 📊 Benchmarks
+## Benchmarks
 
 Processing time depends on video length, Whisper model size, and whether LLM planning is used.
 
@@ -384,7 +386,7 @@ Processing time depends on video length, Whisper model size, and whether LLM pla
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [x] Core editing (cuts, subtitles, BGM, color grading, transitions, speed)
 - [x] Edit Style Transfer (DNA extraction + application + learning)
