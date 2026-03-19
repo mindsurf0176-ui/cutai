@@ -60,7 +60,6 @@ export default function App() {
           <div className="flex items-center gap-2">
             <Clapperboard size={18} className="text-[var(--accent)]" />
             <span className="text-sm font-semibold tracking-tight">CutAI</span>
-            <span className="text-lg">🎬</span>
           </div>
           <button className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors">
             <Settings size={16} className="text-[var(--text-secondary)]" />

@@ -229,18 +229,87 @@ async def get_job(job_id: str) -> JobResponse:
 async def _run_analysis(
     job_id: str, video_id: str, video_path: str, whisper_model: str, skip_transcription: bool
 ) -> None:
-    """Background task for video analysis."""
+    """Background task for video analysis — step-by-step with progress updates."""
     jobs[job_id]["status"] = "running"
-    jobs[job_id]["progress"] = 10.0
+    jobs[job_id]["progress"] = 5.0
     try:
-        from cutai.analyzer import analyze_video
+        import os
+        from pathlib import Path as _Path
 
-        analysis = await asyncio.to_thread(
-            analyze_video,
-            video_path,
-            whisper_model=whisper_model,
-            skip_transcription=skip_transcription,
+        from cutai.analyzer import _extract_audio_cached, _get_video_metadata, _is_scene_silent
+        from cutai.analyzer.quality_analyzer import analyze_quality
+        from cutai.analyzer.scene_detector import detect_scenes
+        from cutai.analyzer.transcriber import transcribe
+        from cutai.models.types import VideoAnalysis
+
+        # Step 0: Get video metadata (5% -> 10%)
+        meta = await asyncio.to_thread(_get_video_metadata, video_path)
+        jobs[job_id]["progress"] = 10.0
+
+        # Step 1: Scene detection (10% -> 40%)
+        scenes = await asyncio.to_thread(detect_scenes, video_path)
+        jobs[job_id]["progress"] = 40.0
+
+        # Step 2: Extract shared audio for transcriber + quality analyzer (40% -> 50%)
+        import tempfile as _tempfile
+
+        audio_tmpdir = _tempfile.mkdtemp(prefix="cutai_audio_shared_")
+        audio_file: str | None = None
+        try:
+            audio_file = await asyncio.to_thread(_extract_audio_cached, video_path, audio_tmpdir)
+        except Exception as exc:
+            logger.warning("Shared audio extraction failed (%s), modules will extract individually", exc)
+        jobs[job_id]["progress"] = 50.0
+
+        # Step 3: Transcription (50% -> 75%)
+        transcript: list = []
+        if not skip_transcription:
+            transcribe_input = audio_file if audio_file else video_path
+            transcript = await asyncio.to_thread(
+                transcribe, transcribe_input, model_name=whisper_model
+            )
+
+            # Annotate scenes with speech info
+            for scene in scenes:
+                scene_segments = [
+                    seg for seg in transcript
+                    if seg.start_time < scene.end_time and seg.end_time > scene.start_time
+                ]
+                scene.has_speech = len(scene_segments) > 0
+                if scene_segments:
+                    scene.transcript = " ".join(seg.text for seg in scene_segments)
+        jobs[job_id]["progress"] = 75.0
+
+        # Step 4: Quality analysis (75% -> 90%)
+        quality = await asyncio.to_thread(
+            analyze_quality, video_path, scenes=scenes, audio_path=audio_file,
         )
+        jobs[job_id]["progress"] = 90.0
+
+        # Step 5: Post-processing — annotate scenes with silence info (90% -> 95%)
+        for i, scene in enumerate(scenes):
+            scene.is_silent = _is_scene_silent(scene, quality)
+            if i < len(quality.audio_energy):
+                scene.avg_energy = quality.audio_energy[i]
+        jobs[job_id]["progress"] = 95.0
+
+        # Clean up shared audio temp directory
+        import shutil as _shutil
+
+        _shutil.rmtree(audio_tmpdir, ignore_errors=True)
+
+        # Assemble VideoAnalysis
+        analysis = VideoAnalysis(
+            file_path=str(_Path(video_path).resolve()),
+            duration=meta["duration"],
+            fps=meta["fps"],
+            width=meta["width"],
+            height=meta["height"],
+            scenes=scenes,
+            transcript=transcript,
+            quality=quality,
+        )
+
         jobs[job_id]["status"] = "completed"
         jobs[job_id]["progress"] = 100.0
         result = analysis.model_dump()
@@ -357,29 +426,158 @@ async def _run_render(
     burn_subtitles: bool,
     bgm_file: str | None,
 ) -> None:
-    """Background task for video rendering."""
+    """Background task for video rendering — step-by-step with progress updates."""
     jobs[job_id]["status"] = "running"
-    jobs[job_id]["progress"] = 10.0
+    jobs[job_id]["progress"] = 5.0
     try:
-        from cutai.editor.renderer import render
-        from cutai.models.types import EditPlan, VideoAnalysis
+        from pathlib import Path as _Path
+
+        from cutai.editor.renderer import _adjust_transcript_for_cuts, _compute_cut_points
+        from cutai.models.types import (
+            BGMOperation,
+            ColorGradeOperation,
+            CutOperation,
+            EditPlan,
+            SpeedOperation,
+            SubtitleOperation,
+            TransitionOperation,
+            VideoAnalysis,
+        )
 
         analysis = VideoAnalysis(**analysis_data)
         edit_plan = EditPlan(**plan_data)
 
-        result_path = await asyncio.to_thread(
-            render,
-            video_path,
-            edit_plan,
-            analysis,
-            output_path,
-            burn_subtitles=burn_subtitles,
-            bgm_file=bgm_file,
-        )
+        # Ensure output directory exists
+        _Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+
+        # Separate operations by type
+        cut_ops = [op for op in edit_plan.operations if isinstance(op, CutOperation)]
+        speed_ops = [op for op in edit_plan.operations if isinstance(op, SpeedOperation)]
+        color_ops = [op for op in edit_plan.operations if isinstance(op, ColorGradeOperation)]
+        bgm_ops = [op for op in edit_plan.operations if isinstance(op, BGMOperation)]
+        sub_ops = [op for op in edit_plan.operations if isinstance(op, SubtitleOperation)]
+        trans_ops = [op for op in edit_plan.operations if isinstance(op, TransitionOperation)]
+
+        # Count active steps for progress distribution
+        active_steps = [
+            bool(cut_ops), bool(speed_ops), bool(color_ops),
+            bool(bgm_ops), bool(sub_ops or (sub_ops and analysis.transcript)),
+            bool(trans_ops),
+        ]
+        num_active = max(1, sum(active_steps))
+
+        # Progress goes from 10% to 90% across steps, then 90->100 for finalization
+        progress_per_step = 80.0 / num_active
+        current_progress = 10.0
+        jobs[job_id]["progress"] = current_progress
+
+        import tempfile as _tempfile
+
+        current_video = video_path
+
+        tmpdir_obj = _tempfile.mkdtemp(prefix="cutai_render_")
+
+        try:
+            # Step 1: Apply cuts
+            if cut_ops:
+                from cutai.editor.cutter import apply_cuts
+
+                cut_output = str(_Path(tmpdir_obj) / "step1_cut.mp4")
+                current_video = await asyncio.to_thread(
+                    apply_cuts, current_video, cut_ops, cut_output,
+                )
+                current_progress += progress_per_step
+                jobs[job_id]["progress"] = round(current_progress, 1)
+
+            # Step 2: Apply speed adjustments
+            if speed_ops:
+                from cutai.editor.speed import apply_speed
+
+                for i, speed_op in enumerate(speed_ops):
+                    speed_output = str(_Path(tmpdir_obj) / f"step2_speed_{i}.mp4")
+                    current_video = await asyncio.to_thread(
+                        apply_speed, current_video, speed_op, speed_output,
+                    )
+                current_progress += progress_per_step
+                jobs[job_id]["progress"] = round(current_progress, 1)
+
+            # Step 3: Apply color grading
+            if color_ops:
+                from cutai.editor.color import apply_color_grade
+
+                color_op = color_ops[0]
+                color_output = str(_Path(tmpdir_obj) / "step3_color.mp4")
+                current_video = await asyncio.to_thread(
+                    apply_color_grade, current_video, color_op, color_output,
+                )
+                current_progress += progress_per_step
+                jobs[job_id]["progress"] = round(current_progress, 1)
+
+            # Step 4: Apply BGM
+            if bgm_ops:
+                from cutai.editor.bgm import apply_bgm
+
+                bgm_op = bgm_ops[0]
+                bgm_output = str(_Path(tmpdir_obj) / "step4_bgm.mp4")
+                current_video = await asyncio.to_thread(
+                    apply_bgm, current_video, bgm_op, bgm_output, bgm_file,
+                )
+                current_progress += progress_per_step
+                jobs[job_id]["progress"] = round(current_progress, 1)
+
+            # Step 5: Apply subtitles
+            if sub_ops and analysis.transcript:
+                from cutai.editor.subtitle import burn_subtitles as _burn_subs
+                from cutai.editor.subtitle import generate_ass
+
+                sub_op = sub_ops[0]
+                transcript = analysis.transcript
+                if cut_ops:
+                    transcript = _adjust_transcript_for_cuts(analysis.transcript, cut_ops)
+
+                if burn_subtitles:
+                    ass_path = str(_Path(tmpdir_obj) / "subtitles.ass")
+                    await asyncio.to_thread(generate_ass, transcript, ass_path, sub_op)
+                    sub_output = str(_Path(tmpdir_obj) / "step5_subs.mp4")
+                    current_video = await asyncio.to_thread(
+                        _burn_subs, current_video, ass_path, sub_output,
+                    )
+                else:
+                    sidecar_path = str(_Path(output_path).with_suffix(".ass"))
+                    await asyncio.to_thread(generate_ass, transcript, sidecar_path, sub_op)
+
+                current_progress += progress_per_step
+                jobs[job_id]["progress"] = round(current_progress, 1)
+
+            # Step 6: Apply transitions
+            if trans_ops:
+                from cutai.editor.transition import apply_transitions
+
+                cut_points = _compute_cut_points(analysis, cut_ops)
+                if cut_points:
+                    trans_output = str(_Path(tmpdir_obj) / "step6_trans.mp4")
+                    current_video = await asyncio.to_thread(
+                        apply_transitions, current_video, trans_ops, cut_points, trans_output,
+                    )
+                current_progress += progress_per_step
+                jobs[job_id]["progress"] = round(current_progress, 1)
+
+            # Final: copy to output
+            jobs[job_id]["progress"] = 95.0
+            if current_video != output_path:
+                import shutil as _shutil
+
+                await asyncio.to_thread(_shutil.copy2, current_video, output_path)
+
+        finally:
+            # Clean up temp directory
+            import shutil as _shutil
+
+            _shutil.rmtree(tmpdir_obj, ignore_errors=True)
 
         jobs[job_id]["status"] = "completed"
         jobs[job_id]["progress"] = 100.0
-        jobs[job_id]["result"] = {"output_path": result_path}
+        jobs[job_id]["result"] = {"output_path": output_path}
     except Exception as e:
         logger.exception("Render failed for job %s", job_id)
         jobs[job_id]["status"] = "failed"
@@ -439,13 +637,15 @@ async def extract_style_endpoint(req: StyleExtractRequest) -> dict:
 
 
 async def _run_style_extract(job_id: str, video_path: str) -> None:
-    """Background task for style extraction."""
+    """Background task for style extraction — with progress updates."""
     jobs[job_id]["status"] = "running"
     jobs[job_id]["progress"] = 10.0
     try:
         from cutai.style import extract_style
 
+        jobs[job_id]["progress"] = 30.0
         dna = await asyncio.to_thread(extract_style, video_path)
+        jobs[job_id]["progress"] = 90.0
         jobs[job_id]["status"] = "completed"
         jobs[job_id]["progress"] = 100.0
         jobs[job_id]["result"] = dna.model_dump()
@@ -490,13 +690,15 @@ async def compute_engagement(video_id: str) -> dict:
 
 
 async def _run_engagement(job_id: str, video_id: str, video_path: str) -> None:
-    """Background task for engagement analysis."""
+    """Background task for engagement analysis — with progress updates."""
     jobs[job_id]["status"] = "running"
     jobs[job_id]["progress"] = 10.0
     try:
         from cutai.analyzer import analyze_with_engagement
 
+        jobs[job_id]["progress"] = 20.0
         analysis, report = await asyncio.to_thread(analyze_with_engagement, video_path)
+        jobs[job_id]["progress"] = 90.0
         jobs[job_id]["status"] = "completed"
         jobs[job_id]["progress"] = 100.0
         jobs[job_id]["result"] = {
@@ -538,7 +740,7 @@ async def _run_highlights(
     analysis_data: dict,
     req: HighlightRequest,
 ) -> None:
-    """Background task for highlight generation."""
+    """Background task for highlight generation — with progress updates."""
     jobs[job_id]["status"] = "running"
     jobs[job_id]["progress"] = 10.0
     try:
@@ -548,12 +750,13 @@ async def _run_highlights(
 
         analysis = VideoAnalysis(**analysis_data)
 
-        # Compute engagement if not yet done
+        # Step 1: Compute engagement scores (10% -> 50%)
+        jobs[job_id]["progress"] = 20.0
         engagement = await asyncio.to_thread(compute_engagement_scores, analysis, video_path)
-
         jobs[job_id]["progress"] = 50.0
 
-        # Generate highlight plan
+        # Step 2: Generate highlight plan (50% -> 90%)
+        jobs[job_id]["progress"] = 60.0
         edit_plan = await asyncio.to_thread(
             gen_hl,
             video_path,
@@ -563,6 +766,7 @@ async def _run_highlights(
             target_ratio=req.target_ratio,
             style=req.style,
         )
+        jobs[job_id]["progress"] = 90.0
 
         jobs[job_id]["status"] = "completed"
         jobs[job_id]["progress"] = 100.0

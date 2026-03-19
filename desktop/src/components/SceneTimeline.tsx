@@ -45,7 +45,7 @@ export default function SceneTimeline() {
                   <span className="font-medium">Scene {scene.id}</span>
                   <br />
                   {formatTime(scene.start_time)} – {formatTime(scene.end_time)}
-                  {scene.is_silent && <span className="ml-1 text-[var(--text-secondary)]">🔇</span>}
+                  {scene.is_silent && <span className="ml-1 text-xs text-[var(--text-secondary)]">silent</span>}
                   {scene.has_speech && <span className="ml-1 text-[var(--text-secondary)]">🗣️</span>}
                 </div>
               </div>
