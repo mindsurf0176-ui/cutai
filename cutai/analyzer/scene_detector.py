@@ -82,6 +82,8 @@ def _create_proxy_video(
     cmd = [
         ffmpeg,
         "-y",
+        "-threads", "0",
+        "-hwaccel", "auto",
         "-i", video_path,
         "-vf", vf,
         "-an",               # drop audio — not needed for scene detection
@@ -99,7 +101,7 @@ def _create_proxy_video(
     start_time = time.monotonic()
 
     try:
-        subprocess.run(cmd, capture_output=True, check=True, timeout=300)
+        subprocess.run(cmd, capture_output=True, check=True, timeout=900)
         elapsed = time.monotonic() - start_time
         proxy_size_mb = os.path.getsize(proxy_path) / (1024 * 1024)
         logger.info(
@@ -108,7 +110,7 @@ def _create_proxy_video(
         )
         return proxy_path
     except subprocess.TimeoutExpired:
-        logger.error("Proxy video creation timed out after 300s")
+        logger.error("Proxy video creation timed out after 900s")
         _safe_remove(proxy_path)
         return None
     except subprocess.CalledProcessError as exc:
