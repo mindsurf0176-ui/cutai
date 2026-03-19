@@ -6,7 +6,7 @@ Thanks for your interest in contributing! Here's how to get started.
 
 ```bash
 # Clone the repo
-git clone https://github.com/minseo-ai/cutai.git
+git clone https://github.com/mindsurf0176-ui/cutai.git
 cd cutai
 
 # Create a virtual environment

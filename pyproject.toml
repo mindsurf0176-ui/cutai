@@ -48,10 +48,10 @@ dev = [
 cutai = "cutai.cli:app_entry"
 
 [project.urls]
-Homepage = "https://github.com/minseo-ai/cutai"
-Repository = "https://github.com/minseo-ai/cutai"
-Documentation = "https://github.com/minseo-ai/cutai#readme"
-Issues = "https://github.com/minseo-ai/cutai/issues"
+Homepage = "https://github.com/mindsurf0176-ui/cutai"
+Repository = "https://github.com/mindsurf0176-ui/cutai"
+Documentation = "https://github.com/mindsurf0176-ui/cutai#readme"
+Issues = "https://github.com/mindsurf0176-ui/cutai/issues"
 
 [tool.setuptools.packages.find]
 include = ["cutai*"]

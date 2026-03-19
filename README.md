@@ -2,10 +2,10 @@
 
 > "Film it. Describe the edit. Done."
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/minseo-ai/cutai/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/mindsurf0176-ui/cutai/blob/main/LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyPI version](https://img.shields.io/pypi/v/cutai.svg)](https://pypi.org/project/cutai/)
-[![CI](https://github.com/minseo-ai/cutai/actions/workflows/ci.yml/badge.svg)](https://github.com/minseo-ai/cutai/actions/workflows/ci.yml)
+[![CI](https://github.com/mindsurf0176-ui/cutai/actions/workflows/ci.yml/badge.svg)](https://github.com/mindsurf0176-ui/cutai/actions/workflows/ci.yml)
 
 **CutAI** is an open-source, local-first AI video editor. Give it a video and a sentence — it analyzes scenes, removes silence, adds subtitles, applies color grading, and renders the result. No cloud, no subscription, no upload. Everything runs on your machine.
 
@@ -346,7 +346,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for the full gu
 ### Quick Start
 
 ```bash
-git clone https://github.com/minseo-ai/cutai.git
+git clone https://github.com/mindsurf0176-ui/cutai.git
 cd cutai
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
@@ -410,4 +410,4 @@ Processing time depends on video length, Whisper model size, and whether LLM pla
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=minseo-ai/cutai&type=Date)](https://star-history.com/#minseo-ai/cutai&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=mindsurf0176-ui/cutai&type=Date)](https://star-history.com/#mindsurf0176-ui/cutai&Date)
