@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/icon-final.png" width="128" alt="CutAI"></p>
+
 # CutAI
 
 > AI video editor with natural language instructions. Local-first, open-source.
