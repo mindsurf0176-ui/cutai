@@ -27,7 +27,8 @@ classifiers = [
 ]
 dependencies = [
     "faster-whisper>=1.0",
-    "scenedetect[opencv]>=0.6",
+    "scenedetect>=0.6",
+    "opencv-python-headless>=4.8",
     "typer>=0.9",
     "rich>=13.0",
     "openai>=1.0",

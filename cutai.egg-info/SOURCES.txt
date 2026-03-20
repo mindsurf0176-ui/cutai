@@ -9,6 +9,7 @@ cutai/highlight.py
 cutai/learning.py
 cutai/multi.py
 cutai/preview.py
+cutai/server.py
 cutai.egg-info/PKG-INFO
 cutai.egg-info/SOURCES.txt
 cutai.egg-info/dependency_links.txt

@@ -10,8 +10,28 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
 from pathlib import Path
+
+# Suppress cv2/av dylib conflict warning on macOS.
+# Both opencv-python-headless and PyAV bundle their own ffmpeg dylibs,
+# causing ObjC class duplicate warnings. This is cosmetic — not a real crash risk.
+# We suppress stderr during the conflicting imports to hide the warning.
+if sys.platform == "darwin":
+    try:
+        _stderr_fd = os.dup(2)
+        _devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(_devnull, 2)
+        try:
+            import av  # noqa: F401
+            import cv2  # noqa: F401
+        finally:
+            os.dup2(_stderr_fd, 2)
+            os.close(_stderr_fd)
+            os.close(_devnull)
+    except Exception:
+        pass  # If import fails here, it'll be caught later with proper error handling
 
 import typer
 from rich.console import Console
@@ -151,7 +171,7 @@ def plan(
     output: str | None = typer.Option(None, "--output", "-o", help="Save edit plan JSON to file"),
     model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
     llm: str = typer.Option("gpt-4o", "--llm", help="LLM model for planning"),
-    no_llm: bool = typer.Option(False, "--no-llm", help="Use rule-based planning only (no API key needed)"),
+    no_llm: bool = typer.Option(False, "--no-llm", help="Use local rule-based planning (no API key needed)"),
     skip_transcription: bool = typer.Option(False, "--no-transcript", help="Skip Whisper transcription"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
 ) -> None:
@@ -215,7 +235,7 @@ def edit(
     output: str | None = typer.Option(None, "--output", "-o", help="Output video file path"),
     model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
     llm: str = typer.Option("gpt-4o", "--llm", help="LLM model for planning"),
-    no_llm: bool = typer.Option(False, "--no-llm", help="Use rule-based planning only"),
+    no_llm: bool = typer.Option(False, "--no-llm", help="Use local rule-based planning (no API key needed)"),
     skip_transcription: bool = typer.Option(False, "--no-transcript", help="Skip Whisper transcription"),
     burn_subtitles: bool = typer.Option(False, "--burn-subtitles", help="Burn subtitles into video (slow, re-encodes). Default: save as .ass sidecar file"),
     style: str | None = typer.Option(None, "--style", "-s", help="Edit DNA style file (.yaml) to apply instead of instruction-based planning"),
@@ -619,7 +639,7 @@ def chat(
     video: str = typer.Argument(help="Path to the video file"),
     model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
     llm: str = typer.Option("gpt-4o", "--llm", help="LLM model for planning"),
-    no_llm: bool = typer.Option(False, "--no-llm", help="Rule-based planning only"),
+    no_llm: bool = typer.Option(False, "--no-llm", help="Use local rule-based planning (no API key needed)"),
     output: str | None = typer.Option(None, "--output", "-o", help="Default output path for /render"),
     skip_transcription: bool = typer.Option(False, "--no-transcript", help="Skip Whisper transcription"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
@@ -679,7 +699,7 @@ def preview(
     resolution: int = typer.Option(360, "--resolution", "-r", help="Preview resolution (height in px)"),
     model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
     llm: str = typer.Option("gpt-4o", "--llm", help="LLM model for planning"),
-    no_llm: bool = typer.Option(False, "--no-llm", help="Rule-based planning only"),
+    no_llm: bool = typer.Option(False, "--no-llm", help="Use local rule-based planning (no API key needed)"),
     style: str | None = typer.Option(None, "--style", "-s", help="Edit DNA style file (.yaml)"),
     skip_transcription: bool = typer.Option(False, "--no-transcript", help="Skip Whisper transcription"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
@@ -774,7 +794,7 @@ def multi(
     output: str = typer.Option("combined_output.mp4", "--output", "-o", help="Output video path"),
     model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
     llm: str = typer.Option("gpt-4o", "--llm", help="LLM model for planning"),
-    no_llm: bool = typer.Option(False, "--no-llm", help="Rule-based planning only"),
+    no_llm: bool = typer.Option(False, "--no-llm", help="Use local rule-based planning (no API key needed)"),
     style: str | None = typer.Option(None, "--style", "-s", help="Edit DNA style file (.yaml)"),
     burn_subtitles: bool = typer.Option(False, "--burn-subtitles", help="Burn subtitles into video"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),

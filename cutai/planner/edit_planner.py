@@ -83,13 +83,37 @@ def create_edit_plan(
 
     # Last resort: return a minimal plan
     logger.warning("No LLM API key and no matching rules. Returning minimal plan.")
+    if use_llm:
+        summary = (
+            "No matching rules found for this instruction. "
+            "Please provide an OpenAI API key for LLM-based planning, "
+            "or try a supported rule-based instruction (e.g., 'remove silence', 'add subtitles')."
+        )
+    else:
+        summary = (
+            "No matching rules found for this instruction. "
+            "Supported instructions: remove silence, add subtitles, trim to N minutes, "
+            "speed up, add bgm, color grade (cinematic/bright/warm), transitions, etc."
+        )
     return EditPlan(
         instruction=instruction,
         operations=[],
         estimated_duration=analysis.duration,
-        summary="No edit operations could be determined. Please provide an OpenAI API key for LLM-based planning.",
+        summary=summary,
     )
 
+
+
+
+def _explain_empty_ops(instruction: str, analysis: VideoAnalysis) -> str:
+    """Generate a helpful message when rules matched but produced no operations."""
+    if _matches_any(instruction, ["remove silence", "cut silence", "무음 제거", "무음 삭제", "delete silence"]):
+        return f"No silent segments detected in this video (silence ratio: {analysis.quality.overall_silence_ratio:.1f}%) — nothing to remove."
+    if _matches_any(instruction, ["boring", "remove boring", "재미없는", "지루한"]):
+        return "No low-engagement scenes detected — the video looks good as-is."
+    if _matches_any(instruction, ["speech only", "말하는 부분만", "talking only", "대화만"]):
+        return "No non-speech segments detected — the entire video contains speech."
+    return "The instruction matched but no segments in this video need editing."
 
 def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | None:
     """Try to create an edit plan using simple rule matching.
@@ -99,11 +123,13 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
     lower = instruction.lower()
     operations: list = []
     summary_parts: list[str] = []
+    rule_matched = False  # Track whether any rule matched (even if 0 ops)
 
     # ── Cut rules ────────────────────────────────────────────────────────
 
     # Rule: Remove silence
     if _matches_any(lower, ["remove silence", "무음 제거", "cut silence", "무음 삭제", "delete silence"]):
+        rule_matched = True
         for seg in analysis.quality.silent_segments:
             operations.append(
                 CutOperation(
@@ -113,10 +139,14 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
                     reason=f"Silent segment ({seg.duration:.1f}s)",
                 )
             )
-        summary_parts.append(f"Remove {len(analysis.quality.silent_segments)} silent segments")
+        if analysis.quality.silent_segments:
+            summary_parts.append(f"Remove {len(analysis.quality.silent_segments)} silent segments")
+        else:
+            summary_parts.append("No silent segments detected in this video — nothing to remove")
 
     # Rule: Add subtitles
     if _matches_any(lower, ["add subtitles", "자막", "subtitle", "subtitles", "자막 넣어", "자막 추가"]):
+        rule_matched = True
         style = "default"
         position = "bottom"
         if _matches_any(lower, ["center", "중앙"]):
@@ -139,6 +169,7 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
         "재미없는 부분 잘라", "재미없는 부분 제거", "boring", "remove boring",
         "지루한 부분", "필요없는 부분",
     ]):
+        rule_matched = True
         for scene in analysis.scenes:
             if scene.is_silent or (scene.avg_energy < -45 and not scene.has_speech):
                 operations.append(CutOperation(
@@ -153,6 +184,7 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
     if _matches_any(lower, [
         "말하는 부분만", "speech only", "talking only", "대화만",
     ]):
+        rule_matched = True
         for scene in analysis.scenes:
             if not scene.has_speech:
                 operations.append(CutOperation(
@@ -166,6 +198,7 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
     # Rule: Trim to X minutes
     trim_match = re.search(r"(?:trim|cut|줄여|줄이)\s*(?:to\s*)?(\d+)\s*(?:min|분|minutes?)", lower)
     if trim_match:
+        rule_matched = True
         target_minutes = int(trim_match.group(1))
         target_seconds = target_minutes * 60.0
         trim_ops = _trim_to_duration(analysis, target_seconds)
@@ -175,28 +208,34 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
     # ── Color grading rules ──────────────────────────────────────────────
 
     if _matches_any(lower, ["밝게", "bright", "밝은 느낌", "밝은 톤"]):
+        rule_matched = True
         operations.append(ColorGradeOperation(preset="bright"))
         summary_parts.append("Apply bright color grade")
 
     elif _matches_any(lower, ["따뜻하게", "warm", "따뜻한 느낌", "따뜻한 톤"]):
+        rule_matched = True
         operations.append(ColorGradeOperation(preset="warm"))
         summary_parts.append("Apply warm color grade")
 
     elif _matches_any(lower, ["시네마틱", "cinematic", "영화 느낌", "영화같이"]):
+        rule_matched = True
         operations.append(ColorGradeOperation(preset="cinematic"))
         summary_parts.append("Apply cinematic color grade")
 
     elif _matches_any(lower, ["빈티지", "vintage", "레트로", "retro"]):
+        rule_matched = True
         operations.append(ColorGradeOperation(preset="vintage"))
         summary_parts.append("Apply vintage color grade")
 
     elif _matches_any(lower, ["차갑게", "cool", "차가운 느낌", "쿨톤"]):
+        rule_matched = True
         operations.append(ColorGradeOperation(preset="cool"))
         summary_parts.append("Apply cool color grade")
 
     # ── BGM rules ────────────────────────────────────────────────────────
 
     if _matches_any(lower, ["bgm", "배경음악", "음악 넣", "음악 추가", "배경 음악"]):
+        rule_matched = True
         mood = _detect_bgm_mood(lower)
         operations.append(BGMOperation(mood=mood))
         summary_parts.append(f"Add BGM (mood={mood})")
@@ -205,6 +244,7 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
 
     speed_match = re.search(r"(\d+(?:\.\d+)?)\s*배속", lower)
     if speed_match:
+        rule_matched = True
         factor = float(speed_match.group(1))
         operations.append(SpeedOperation(
             factor=factor,
@@ -213,6 +253,7 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
         ))
         summary_parts.append(f"Speed ×{factor}")
     elif _matches_any(lower, ["빠르게", "speed up", "fast", "faster"]):
+        rule_matched = True
         operations.append(SpeedOperation(
             factor=2.0,
             start_time=0,
@@ -220,6 +261,7 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
         ))
         summary_parts.append("Speed ×2.0")
     elif _matches_any(lower, ["느리게", "slow", "슬로우", "slower", "slow motion"]):
+        rule_matched = True
         operations.append(SpeedOperation(
             factor=0.5,
             start_time=0,
@@ -230,6 +272,7 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
     # ── Transition rules ─────────────────────────────────────────────────
 
     if _matches_any(lower, ["페이드", "fade", "전환 효과", "트랜지션", "transition"]):
+        rule_matched = True
         style: str = "fade"
         if _matches_any(lower, ["dissolve", "디졸브"]):
             style = "dissolve"
@@ -248,7 +291,11 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
 
     # ── Return ───────────────────────────────────────────────────────────
 
-    if not operations:
+    # If rules matched but produced no operations, add helpful context
+    if rule_matched and not operations:
+        summary_parts = [_explain_empty_ops(lower, analysis)]
+
+    if not rule_matched:
         return None
 
     estimated = _estimate_duration(analysis, operations)
