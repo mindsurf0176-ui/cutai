@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 CONFIG_DIR = Path.home() / ".cutai"
 CONFIG_PATH = CONFIG_DIR / "config.yaml"
-FFMPEG_PATH = os.environ.get("CUTAI_FFMPEG_PATH", "/opt/homebrew/bin/ffmpeg")
-FFPROBE_PATH = os.environ.get("CUTAI_FFPROBE_PATH", "/opt/homebrew/bin/ffprobe")
+FFMPEG_PATH = os.environ.get("CUTAI_FFMPEG_PATH", "ffmpeg")
+FFPROBE_PATH = os.environ.get("CUTAI_FFPROBE_PATH", "ffprobe")
 
 
 class CutAIConfig(BaseModel):

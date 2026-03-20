@@ -39,6 +39,12 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
+def _version_callback(value: bool) -> None:
+    if value:
+        from cutai import __version__
+        print(f"cutai {__version__}")
+        raise typer.Exit()
+
 app = typer.Typer(
     name="cutai",
     help="🎬 CutAI — AI video editor with natural language instructions.",
@@ -46,6 +52,12 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 console = Console()
+
+@app.callback()
+def main(
+    version: bool = typer.Option(False, "--version", "-V", help="Show version and exit.", callback=_version_callback, is_eager=True),
+) -> None:
+    """🎬 CutAI — AI video editor with natural language instructions."""
 
 
 def _setup_logging(verbose: bool) -> None:
@@ -109,7 +121,7 @@ def _handle_error(exc: Exception) -> None:
         console.print(Panel(
             f"[red bold]Unexpected Error[/red bold]\n\n{exc}\n\n"
             f"[dim]{tb}[/dim]\n\n"
-            "[yellow]Please report this bug at https://github.com/minseo/cutai/issues[/yellow]",
+            "[yellow]Please report this bug at https://github.com/mindsurf0176-ui/cutai/issues[/yellow]",
             style="red",
             title="🐛 Bug",
         ))
