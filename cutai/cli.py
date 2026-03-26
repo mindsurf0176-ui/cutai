@@ -39,6 +39,8 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
+from cutai.models.types import SubtitleOperation
+
 def _version_callback(value: bool) -> None:
     if value:
         from cutai import __version__
@@ -330,7 +332,10 @@ def edit(
             f"📁 Output: [bold]{result}[/bold]",
         ]
         ass_path = Path(output).with_suffix(".ass")
-        if ass_path.exists():
+        has_subtitle_op = any(
+            isinstance(op, SubtitleOperation) for op in edit_plan.operations
+        )
+        if has_subtitle_op and not burn_subtitles and ass_path.exists():
             success_lines.append(f"📝 Subtitles: {ass_path}")
 
         console.print()

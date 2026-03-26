@@ -302,12 +302,6 @@ def _adjust_transcript_for_cuts(
         if kept_end - kept_start < 0.05:
             continue
 
-        remaining_ratio = (
-            (kept_end - kept_start) / seg_duration if seg_duration > 0 else 0
-        )
-        if remaining_ratio < 0.5:
-            continue
-
         shift = 0.0
         for r_start, r_end in removes:
             if r_end <= kept_start:
