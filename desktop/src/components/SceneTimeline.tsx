@@ -19,8 +19,14 @@ export default function SceneTimeline() {
 
   if (!analysis || !videoInfo) return null;
 
-  const totalDuration = videoInfo.duration;
+  const totalDuration = analysis.duration || videoInfo.duration;
   if (totalDuration <= 0) return null;
+
+  const speechDuration = analysis.scenes
+    .filter((scene) => scene.has_speech)
+    .reduce((sum, scene) => sum + scene.duration, 0);
+  const speechRatio = totalDuration > 0 ? speechDuration / totalDuration : 0;
+  const silenceRatio = analysis.quality?.overall_silence_ratio ?? 0;
 
   return (
     <div className="px-2">
@@ -56,8 +62,7 @@ export default function SceneTimeline() {
       <div className="flex justify-between mt-1 text-[10px] text-[var(--text-secondary)]">
         <span>{analysis.scenes.length} scenes</span>
         <span>
-          {Math.round(analysis.speech_ratio * 100)}% speech ·{' '}
-          {Math.round(analysis.silence_ratio * 100)}% silence
+          {Math.round(speechRatio * 100)}% speech · {Math.round(silenceRatio * 100)}% silence
         </span>
       </div>
     </div>

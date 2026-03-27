@@ -42,7 +42,7 @@ export default function DropZone() {
         const { job_id } = await analyzeVideo(video_id);
         dispatch({
           type: 'SET_ACTIVE_JOB',
-          job: { job_id, status: 'running', progress: 0 },
+          job: { job_id, type: 'analysis', status: 'running', progress: 0 },
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Upload failed';

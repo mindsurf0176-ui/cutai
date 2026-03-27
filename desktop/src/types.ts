@@ -19,10 +19,18 @@ export interface SceneInfo {
 }
 
 export interface VideoAnalysis {
+  file_path: string;
+  duration: number;
+  fps: number;
+  width: number;
+  height: number;
   scenes: SceneInfo[];
-  total_duration: number;
-  speech_ratio: number;
-  silence_ratio: number;
+  transcript: Array<Record<string, unknown>>;
+  quality: {
+    silent_segments: Array<Record<string, unknown>>;
+    audio_energy: number[];
+    overall_silence_ratio: number;
+  };
 }
 
 export interface EditOperation {
@@ -42,6 +50,7 @@ export interface EditPlan {
 
 export interface Job {
   job_id: string;
+  type?: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
   progress: number;
   result?: Record<string, unknown>;

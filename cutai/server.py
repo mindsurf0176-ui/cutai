@@ -173,6 +173,15 @@ async def get_video(video_id: str) -> dict:
     return {"video_id": video_id, **info}
 
 
+@app.get("/api/videos/{video_id}/analysis")
+async def get_video_analysis(video_id: str) -> dict:
+    """Get completed analysis for a video."""
+    info = _get_video_or_404(video_id)
+    if "analysis" not in info:
+        raise HTTPException(status_code=404, detail="Analysis not ready")
+    return info["analysis"]
+
+
 @app.delete("/api/videos/{video_id}")
 async def delete_video(video_id: str) -> dict:
     """Delete an uploaded video."""

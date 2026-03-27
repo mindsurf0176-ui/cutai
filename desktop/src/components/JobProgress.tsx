@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Loader2, CheckCircle, XCircle, X } from 'lucide-react';
 import * as Progress from '@radix-ui/react-progress';
 import { useApp } from '../store';
-import { connectProgressWs, pollJob } from '../api';
+import { connectProgressWs, pollJob, getAnalysis } from '../api';
 
 export default function JobProgress() {
   const { state, dispatch } = useApp();
@@ -56,15 +56,39 @@ export default function JobProgress() {
   // Auto-dismiss completed jobs
   useEffect(() => {
     if (activeJob?.status === 'completed') {
-      const timer = setTimeout(() => {
-        dispatch({ type: 'CLEAR_JOB' });
-        if (state.view === 'rendering') {
-          dispatch({ type: 'SET_VIEW', view: 'editor' });
+      let isSubscribed = true;
+
+      const handleCompletion = async () => {
+        if (activeJob.type === 'analysis' && state.videoId) {
+          try {
+            const analysisData = activeJob.result || await getAnalysis(state.videoId);
+            if (isSubscribed) {
+              dispatch({ type: 'SET_ANALYSIS', analysis: analysisData as any });
+            }
+          } catch (e) {
+            console.error('Failed to load analysis:', e);
+          }
         }
-      }, 3000);
-      return () => clearTimeout(timer);
+
+        if (isSubscribed) {
+          setTimeout(() => {
+            if (isSubscribed) {
+              dispatch({ type: 'CLEAR_JOB' });
+              if (state.view === 'rendering') {
+                dispatch({ type: 'SET_VIEW', view: 'editor' });
+              }
+            }
+          }, 3000);
+        }
+      };
+
+      handleCompletion();
+
+      return () => {
+        isSubscribed = false;
+      };
     }
-  }, [activeJob?.status, dispatch, state.view]);
+  }, [activeJob?.status, activeJob?.type, activeJob?.result, state.videoId, state.view, dispatch]);
 
   if (!activeJob) return null;
 

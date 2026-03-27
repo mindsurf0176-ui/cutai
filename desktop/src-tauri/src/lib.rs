@@ -59,6 +59,15 @@ fn spawn_backend_command() -> Result<Child, String> {
         attempts.push(cmd);
     }
 
+    for venv_python in [root.join(".venv313/bin/python"), root.join(".venv/bin/python")] {
+        if venv_python.exists() {
+            let mut cmd = Command::new(venv_python);
+            cmd.args(["-m", "cutai.cli", "server", "--host", BACKEND_HOST, "--port"])
+                .arg(BACKEND_PORT.to_string());
+            attempts.push(cmd);
+        }
+    }
+
     for python in ["python3", "python"] {
         let mut cmd = Command::new(python);
         cmd.args(["-m", "cutai.cli", "server", "--host", BACKEND_HOST, "--port"])
