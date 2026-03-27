@@ -251,7 +251,7 @@ def edit(
     llm: str = typer.Option("gpt-4o", "--llm", help="LLM model for planning"),
     no_llm: bool = typer.Option(False, "--no-llm", help="Use local rule-based planning (no API key needed)"),
     skip_transcription: bool = typer.Option(False, "--no-transcript", help="Skip Whisper transcription"),
-    burn_subtitles: bool = typer.Option(False, "--burn-subtitles", help="Burn subtitles into video (slow, re-encodes). Default: save as .ass sidecar file"),
+    burn_subtitles: bool = typer.Option(True, "--burn-subtitles/--sidecar-subtitles", help="Burn subtitles into video by default. Use --sidecar-subtitles to save a .ass sidecar instead"),
     style: str | None = typer.Option(None, "--style", "-s", help="Edit DNA style file (.yaml) to apply instead of instruction-based planning"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
 ) -> None:
@@ -541,7 +541,7 @@ def style_apply(
     output: str | None = typer.Option(None, "--output", "-o", help="Output video path"),
     instruction: str = typer.Option("", "--instruction", "-i", help="Additional instruction"),
     model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
-    burn_subtitles: bool = typer.Option(False, "--burn-subtitles", help="Burn subtitles into video"),
+    burn_subtitles: bool = typer.Option(True, "--burn-subtitles/--sidecar-subtitles", help="Burn subtitles into video by default. Use --sidecar-subtitles to save a .ass sidecar instead"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
 ) -> None:
     """Apply an Edit DNA style to a video."""
@@ -817,7 +817,7 @@ def multi(
     llm: str = typer.Option("gpt-4o", "--llm", help="LLM model for planning"),
     no_llm: bool = typer.Option(False, "--no-llm", help="Use local rule-based planning (no API key needed)"),
     style: str | None = typer.Option(None, "--style", "-s", help="Edit DNA style file (.yaml)"),
-    burn_subtitles: bool = typer.Option(False, "--burn-subtitles", help="Burn subtitles into video"),
+    burn_subtitles: bool = typer.Option(True, "--burn-subtitles/--sidecar-subtitles", help="Burn subtitles into video by default. Use --sidecar-subtitles to save a .ass sidecar instead"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
 ) -> None:
     """Combine and edit multiple video files into one.
@@ -862,6 +862,7 @@ def multi(
                 llm_model=llm,
                 use_llm=not no_llm,
                 style=style,
+                burn_subtitles=burn_subtitles,
             )
             progress.update(task, completed=True)
 

@@ -63,7 +63,7 @@ class PlanRequest(BaseModel):
 class RenderRequest(BaseModel):
     video_id: str
     plan: dict  # EditPlan as dict
-    burn_subtitles: bool = False
+    burn_subtitles: bool = True
     bgm_file: str | None = None
     output_path: str | None = None
 

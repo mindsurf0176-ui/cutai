@@ -33,6 +33,7 @@ def multi_edit(
     llm_model: str = "gpt-4o",
     use_llm: bool = True,
     style: str | None = None,
+    burn_subtitles: bool = True,
 ) -> str:
     """Edit and combine multiple video files into one output.
 
@@ -51,6 +52,7 @@ def multi_edit(
         llm_model: LLM model for planning.
         use_llm: Whether to use LLM planning.
         style: Optional path to Edit DNA YAML file.
+        burn_subtitles: If True (default), burn subtitles into the output video.
 
     Returns:
         Path to the output video.
@@ -122,6 +124,7 @@ def multi_edit(
                 edit_plan,
                 merged,
                 output_path,
+                burn_subtitles=burn_subtitles,
             )
         else:
             # No operations — just copy the concatenated file

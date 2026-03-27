@@ -88,6 +88,7 @@ def test_edit_reports_subtitle_sidecar_when_plan_has_subtitles(
             "-i",
             "add subtitles",
             "--no-llm",
+            "--sidecar-subtitles",
         ],
     )
 
@@ -95,6 +96,51 @@ def test_edit_reports_subtitle_sidecar_when_plan_has_subtitles(
     assert "Subtitles:" in result.output
     assert ass_path.name in result.output
 
+
+
+
+def test_edit_burns_subtitles_by_default(
+    monkeypatch,
+    sample_analysis,
+    tmp_path: Path,
+):
+    video_path = tmp_path / "input.mp4"
+    output_path = tmp_path / "input_edited.mp4"
+    video_path.write_bytes(b"video")
+
+    calls = {}
+
+    monkeypatch.setattr("cutai.analyzer.analyze_video", lambda *_args, **_kwargs: sample_analysis)
+    monkeypatch.setattr(
+        "cutai.planner.create_edit_plan",
+        lambda *_args, **_kwargs: EditPlan(
+            instruction="add subtitles",
+            operations=[SubtitleOperation()],
+            estimated_duration=sample_analysis.duration,
+            summary="Add subtitles",
+        ),
+    )
+
+    def fake_render(_video_path, _plan, _analysis, _output, *, burn_subtitles=True, **_kwargs):
+        calls["burn_subtitles"] = burn_subtitles
+        return str(output_path)
+
+    monkeypatch.setattr("cutai.editor.renderer.render", fake_render)
+
+    result = runner.invoke(
+        app,
+        [
+            "edit",
+            str(video_path),
+            "-i",
+            "add subtitles",
+            "--no-llm",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert calls == {"burn_subtitles": True}
+    assert "Subtitles:" not in result.output
 
 def test_preview_accepts_style_without_instruction(
     monkeypatch,

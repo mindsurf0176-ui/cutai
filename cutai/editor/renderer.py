@@ -37,7 +37,7 @@ def render(
     plan: EditPlan,
     analysis: VideoAnalysis,
     output_path: str,
-    burn_subtitles: bool = False,
+    burn_subtitles: bool = True,
     bgm_file: str | None = None,
 ) -> str:
     """Apply an edit plan and render the final video.
@@ -55,8 +55,8 @@ def render(
         plan: The edit plan to apply.
         analysis: Video analysis (needed for transcript data).
         output_path: Path for the final output video.
-        burn_subtitles: If True, burn subtitles into video (slow, re-encodes).
-            If False (default), save .ass file as sidecar next to output.
+        burn_subtitles: If True (default), burn subtitles into video.
+            If False, save .ass file as sidecar next to output instead.
         bgm_file: Optional path to a BGM audio file to use.
 
     Returns:
