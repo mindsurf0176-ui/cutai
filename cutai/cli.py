@@ -711,7 +711,7 @@ def chat(
 @app.command()
 def preview(
     video: str = typer.Argument(help="Path to the video file"),
-    instruction: str = typer.Option(..., "--instruction", "-i", help="Natural language editing instruction"),
+    instruction: str = typer.Option("", "--instruction", "-i", help="Natural language editing instruction"),
     output: str | None = typer.Option(None, "--output", "-o", help="Output preview path"),
     resolution: int = typer.Option(360, "--resolution", "-r", help="Preview resolution (height in px)"),
     model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
@@ -734,14 +734,18 @@ def preview(
     _setup_logging(verbose)
     video_path = _validate_video(video)
 
+    if not instruction and not style:
+        console.print("[red]Error:[/red] Provide --instruction or --style (or both).")
+        raise typer.Exit(1)
+
     try:
-        console.print(
-            Panel(
-                f"🎬 Preview for [bold]{video_path.name}[/bold] ({resolution}p)\n"
-                f"📝 Instruction: [italic]{instruction}[/italic]",
-                style="blue",
-            )
-        )
+        desc = f"🎬 Preview for [bold]{video_path.name}[/bold] ({resolution}p)\n"
+        if style:
+            desc += f"🧬 Style: [italic]{style}[/italic]\n"
+        if instruction:
+            desc += f"📝 Instruction: [italic]{instruction}[/italic]"
+
+        console.print(Panel(desc.rstrip(), style="blue"))
 
         from cutai.analyzer import analyze_video
         from cutai.preview import render_preview

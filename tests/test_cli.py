@@ -7,7 +7,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from cutai.cli import app
-from cutai.models.types import EditPlan, SubtitleOperation
+from cutai.models.types import EditDNA, EditPlan, SubtitleOperation
 
 
 runner = CliRunner()
@@ -94,3 +94,63 @@ def test_edit_reports_subtitle_sidecar_when_plan_has_subtitles(
     assert result.exit_code == 0
     assert "Subtitles:" in result.output
     assert ass_path.name in result.output
+
+
+def test_preview_accepts_style_without_instruction(
+    monkeypatch,
+    sample_analysis,
+    tmp_path: Path,
+):
+    video_path = tmp_path / "input.mp4"
+    preview_path = tmp_path / "input_preview.mp4"
+    video_path.write_bytes(b"video")
+
+    applied = {}
+
+    monkeypatch.setattr("cutai.analyzer.analyze_video", lambda *_args, **_kwargs: sample_analysis)
+    monkeypatch.setattr("cutai.style.load_style", lambda *_args, **_kwargs: EditDNA(name="cinematic"))
+
+    def fake_apply_style(analysis, style_dna, instruction=""):
+        applied["analysis"] = analysis
+        applied["style_name"] = style_dna.name
+        applied["instruction"] = instruction
+        return EditPlan(
+            instruction="style preview",
+            operations=[],
+            estimated_duration=analysis.duration,
+            summary="Preview style only",
+        )
+
+    monkeypatch.setattr("cutai.style.apply_style", fake_apply_style)
+    monkeypatch.setattr(
+        "cutai.preview.render_preview",
+        lambda *_args, **_kwargs: str(preview_path),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "preview",
+            str(video_path),
+            "--style",
+            "cinematic.yaml",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Preview ready!" in result.output
+    assert applied == {
+        "analysis": sample_analysis,
+        "style_name": "cinematic",
+        "instruction": "",
+    }
+
+
+def test_preview_requires_instruction_or_style(tmp_path: Path):
+    video_path = tmp_path / "input.mp4"
+    video_path.write_bytes(b"video")
+
+    result = runner.invoke(app, ["preview", str(video_path)])
+
+    assert result.exit_code == 1
+    assert "Provide --instruction or --style (or both)." in result.output
