@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Play } from 'lucide-react';
+import { GripHorizontal } from 'lucide-react';
 import * as Slider from '@radix-ui/react-slider';
 import { useApp } from '../store';
 import { getThumbnailUrl } from '../api';
@@ -45,15 +45,13 @@ export default function VideoPreview() {
           <div className="text-[var(--text-secondary)] text-sm">Loading preview...</div>
         )}
 
-        {/* Play button overlay */}
-        <button
-          className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200 bg-black/30"
-          onClick={() => {/* Playback placeholder */}}
-        >
-          <div className="w-16 h-16 rounded-full bg-[var(--accent)]/80 flex items-center justify-center backdrop-blur-sm">
-            <Play size={28} className="text-white ml-1" />
+        {/* Preview mode overlay */}
+        <div className="absolute inset-x-0 bottom-3 flex justify-center pointer-events-none">
+          <div className="inline-flex items-center gap-2 rounded-full bg-black/65 px-3 py-1.5 text-xs text-white backdrop-blur-sm">
+            <GripHorizontal size={14} />
+            <span>Scrub timeline to preview frames</span>
           </div>
-        </button>
+        </div>
 
         {/* Video info badge */}
         <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm rounded-md px-2 py-1 text-xs text-[var(--text-secondary)]">
@@ -66,12 +64,13 @@ export default function VideoPreview() {
 
       {/* Timeline controls */}
       <div className="flex items-center gap-3 px-2">
-        <button
-          className="w-8 h-8 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center hover:bg-[var(--accent)] transition-colors"
-          onClick={() => {/* Toggle play/pause */}}
+        <div
+          className="w-8 h-8 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)]"
+          aria-label="Frame preview only"
+          title="Playback is not available yet"
         >
-          <Play size={14} className="text-[var(--text-primary)] ml-0.5" />
-        </button>
+          <GripHorizontal size={14} />
+        </div>
 
         <span className="text-xs text-[var(--text-secondary)] w-12 text-right tabular-nums">
           {formatTime(currentTime)}
