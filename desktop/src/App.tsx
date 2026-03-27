@@ -1,8 +1,9 @@
-import { useReducer, useEffect, useCallback } from 'react';
+import { useReducer, useEffect, useCallback, useState } from 'react';
 import { Settings, Clapperboard, AlertCircle, X } from 'lucide-react';
 import { AppContext, appReducer, initialState, useApp } from './store';
-import { healthCheck } from './api';
+import { canAutoStartBackend, healthCheck, startBackend } from './api';
 import Sidebar from './components/Sidebar';
+import BackendGate from './components/BackendGate';
 import DropZone from './components/DropZone';
 import VideoPreview from './components/VideoPreview';
 import EditPlanPanel from './components/EditPlanPanel';
@@ -10,8 +11,24 @@ import StylePanel from './components/StylePanel';
 import InstructionBar from './components/InstructionBar';
 import JobProgress from './components/JobProgress';
 
-function AppMainContent() {
+interface AppMainContentProps {
+  onRetryBackend: () => void;
+  retryingBackend: boolean;
+}
+
+function AppMainContent({ onRetryBackend, retryingBackend }: AppMainContentProps) {
   const { state } = useApp();
+
+  if (state.backendStatus !== 'online') {
+    return (
+      <BackendGate
+        status={state.backendStatus}
+        error={state.backendError}
+        onRetry={onRetryBackend}
+        retrying={retryingBackend}
+      />
+    );
+  }
 
   if (state.view === 'upload') {
     return <DropZone />;
@@ -39,18 +56,73 @@ function AppMainContent() {
 
 export default function App() {
   const [state, dispatch] = useReducer(appReducer, initialState);
+  const [retryingBackend, setRetryingBackend] = useState(false);
 
-  // Check backend health periodically
-  const checkHealth = useCallback(async () => {
-    const online = await healthCheck();
-    dispatch({ type: 'SET_BACKEND_ONLINE', online });
+  const markBackendOnline = useCallback(() => {
+    dispatch({ type: 'SET_BACKEND_STATE', status: 'online', error: null });
   }, []);
 
+  const markBackendOffline = useCallback((error: string) => {
+    dispatch({ type: 'SET_BACKEND_STATE', status: 'offline', error });
+  }, []);
+
+  const bootstrapBackend = useCallback(async () => {
+    dispatch({ type: 'SET_BACKEND_STATE', status: 'checking', error: null });
+
+    const online = await healthCheck();
+    if (online) {
+      markBackendOnline();
+      return;
+    }
+
+    if (!canAutoStartBackend()) {
+      markBackendOffline(
+        'Auto-start is only available in the Tauri desktop app. In browser dev mode, start `cutai server --host 127.0.0.1 --port 18910` manually.'
+      );
+      return;
+    }
+
+    dispatch({ type: 'SET_BACKEND_STATE', status: 'starting', error: null });
+
+    try {
+      await startBackend();
+      markBackendOnline();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to start the CutAI backend.';
+      markBackendOffline(message);
+    }
+  }, [markBackendOffline, markBackendOnline]);
+
+  const retryBackend = useCallback(async () => {
+    setRetryingBackend(true);
+    try {
+      await bootstrapBackend();
+    } finally {
+      setRetryingBackend(false);
+    }
+  }, [bootstrapBackend]);
+
   useEffect(() => {
-    checkHealth();
-    const interval = setInterval(checkHealth, 10000);
+    void bootstrapBackend();
+  }, [bootstrapBackend]);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const online = await healthCheck();
+
+      if (online) {
+        markBackendOnline();
+        return;
+      }
+
+      if (state.backendOnline) {
+        markBackendOffline('Lost connection to the local backend. Retry to launch it again.');
+      }
+    }, 10000);
+
     return () => clearInterval(interval);
-  }, [checkHealth]);
+  }, [markBackendOffline, markBackendOnline, state.backendOnline]);
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>
@@ -84,7 +156,10 @@ export default function App() {
         <div className="flex flex-1 min-h-0">
           <Sidebar />
           <main className="flex-1 flex flex-col min-h-0">
-            <AppMainContent />
+            <AppMainContent
+              onRetryBackend={retryBackend}
+              retryingBackend={retryingBackend}
+            />
           </main>
         </div>
 

@@ -3,6 +3,7 @@ import type { VideoInfo, VideoAnalysis, EditPlan, Job, Preset } from './types';
 
 export type ViewMode = 'upload' | 'editor' | 'rendering';
 export type SidebarTab = 'upload' | 'edit' | 'style' | 'highlights';
+export type BackendStatus = 'checking' | 'starting' | 'online' | 'offline';
 
 export interface AppState {
   videoId: string | null;
@@ -14,7 +15,9 @@ export interface AppState {
   view: ViewMode;
   sidebarTab: SidebarTab;
   uploadProgress: number;
+  backendStatus: BackendStatus;
   backendOnline: boolean;
+  backendError: string | null;
   error: string | null;
   currentTime: number;
 }
@@ -29,7 +32,9 @@ export const initialState: AppState = {
   view: 'upload',
   sidebarTab: 'upload',
   uploadProgress: 0,
+  backendStatus: 'checking',
   backendOnline: false,
+  backendError: null,
   error: null,
   currentTime: 0,
 };
@@ -47,7 +52,7 @@ export type AppAction =
   | { type: 'SET_VIEW'; view: ViewMode }
   | { type: 'SET_SIDEBAR_TAB'; tab: SidebarTab }
   | { type: 'SET_UPLOAD_PROGRESS'; progress: number }
-  | { type: 'SET_BACKEND_ONLINE'; online: boolean }
+  | { type: 'SET_BACKEND_STATE'; status: BackendStatus; error?: string | null }
   | { type: 'SET_ERROR'; error: string | null }
   | { type: 'SET_CURRENT_TIME'; time: number }
   | { type: 'RESET' };
@@ -100,14 +105,25 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, sidebarTab: action.tab };
     case 'SET_UPLOAD_PROGRESS':
       return { ...state, uploadProgress: action.progress };
-    case 'SET_BACKEND_ONLINE':
-      return { ...state, backendOnline: action.online };
+    case 'SET_BACKEND_STATE':
+      return {
+        ...state,
+        backendStatus: action.status,
+        backendOnline: action.status === 'online',
+        backendError: action.error ?? null,
+      };
     case 'SET_ERROR':
       return { ...state, error: action.error };
     case 'SET_CURRENT_TIME':
       return { ...state, currentTime: action.time };
     case 'RESET':
-      return { ...initialState, backendOnline: state.backendOnline, presets: state.presets };
+      return {
+        ...initialState,
+        backendStatus: state.backendStatus,
+        backendOnline: state.backendOnline,
+        backendError: state.backendError,
+        presets: state.presets,
+      };
     default:
       return state;
   }

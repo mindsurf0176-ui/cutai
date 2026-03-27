@@ -30,6 +30,20 @@ function formatFileSize(bytes: number): string {
 
 export default function Sidebar() {
   const { state, dispatch } = useApp();
+  const backendLabel =
+    state.backendStatus === 'starting'
+      ? 'starting'
+      : state.backendStatus === 'checking'
+        ? 'checking'
+        : state.backendOnline
+          ? 'online'
+          : 'offline';
+  const backendDotClass =
+    state.backendStatus === 'starting' || state.backendStatus === 'checking'
+      ? 'bg-[var(--warning)]'
+      : state.backendOnline
+        ? 'bg-[var(--success)]'
+        : 'bg-[var(--error)]';
 
   return (
     <aside className="flex flex-col w-56 bg-[var(--bg-secondary)] border-r border-[var(--bg-tertiary)] h-full">
@@ -110,12 +124,8 @@ export default function Sidebar() {
       {/* Backend status */}
       <div className="p-3 border-t border-[var(--bg-tertiary)]">
         <div className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)]">
-          <div
-            className={`w-1.5 h-1.5 rounded-full ${
-              state.backendOnline ? 'bg-[var(--success)]' : 'bg-[var(--error)]'
-            }`}
-          />
-          Backend {state.backendOnline ? 'online' : 'offline'}
+          <div className={`w-1.5 h-1.5 rounded-full ${backendDotClass}`} />
+          Backend {backendLabel}
         </div>
       </div>
     </aside>

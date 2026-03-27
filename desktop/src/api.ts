@@ -1,6 +1,13 @@
+import { invoke } from '@tauri-apps/api/core';
 import type { VideoInfo, VideoAnalysis, EditPlan, Job, Preset } from './types';
 
 const API_BASE = 'http://127.0.0.1:18910';
+
+interface BackendStartResponse {
+  started: boolean;
+  already_running: boolean;
+  port: number;
+}
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -10,12 +17,33 @@ class ApiError extends Error {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, options);
+  let res: Response;
+
+  try {
+    res = await fetch(`${API_BASE}${path}`, options);
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : 'Unable to reach the CutAI backend'
+    );
+  }
+
   if (!res.ok) {
     const text = await res.text().catch(() => 'Unknown error');
     throw new ApiError(res.status, text);
   }
   return res.json() as Promise<T>;
+}
+
+export function canAutoStartBackend(): boolean {
+  const runtimeWindow = globalThis.window as
+    | (Window & { __TAURI_INTERNALS__?: unknown })
+    | undefined;
+
+  return Boolean(runtimeWindow?.__TAURI_INTERNALS__);
+}
+
+export async function startBackend(): Promise<BackendStartResponse> {
+  return invoke<BackendStartResponse>('start_backend');
 }
 
 export async function healthCheck(): Promise<boolean> {
