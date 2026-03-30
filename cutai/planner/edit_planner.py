@@ -11,7 +11,7 @@ import json
 import logging
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, cast
 
 if TYPE_CHECKING:
     from cutai.models.types import UserPreferences
@@ -21,6 +21,7 @@ from cutai.models.types import (
     BGMOperation,
     ColorGradeOperation,
     CutOperation,
+    EditOperation,
     EditPlan,
     SpeedOperation,
     SubtitleOperation,
@@ -30,6 +31,11 @@ from cutai.models.types import (
 
 logger = logging.getLogger(__name__)
 
+SubtitleStyle = Literal["default", "emphasis", "karaoke"]
+SubtitlePosition = Literal["bottom", "center", "top"]
+BgmMood = Literal["upbeat", "calm", "dramatic", "funny", "emotional"]
+TransitionStyle = Literal["cut", "fade", "dissolve", "wipe"]
+
 SYSTEM_PROMPT_PATH = Path(__file__).parent / "prompts" / "system.md"
 
 
@@ -38,7 +44,7 @@ def create_edit_plan(
     instruction: str,
     llm_model: str = "gpt-4o",
     use_llm: bool = True,
-    preferences: "UserPreferences | None" = None,
+    preferences: UserPreferences | None = None,
 ) -> EditPlan:
     """Create an edit plan from a video analysis and instruction.
 
@@ -121,7 +127,7 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
     Handles common instructions without needing an LLM.
     """
     lower = instruction.lower()
-    operations: list = []
+    operations: list[EditOperation] = []
     summary_parts: list[str] = []
     rule_matched = False  # Track whether any rule matched (even if 0 ops)
 
@@ -147,8 +153,8 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
     # Rule: Add subtitles
     if _matches_any(lower, ["add subtitles", "자막", "subtitle", "subtitles", "자막 넣어", "자막 추가"]):
         rule_matched = True
-        style = "default"
-        position = "bottom"
+        subtitle_style: SubtitleStyle = "default"
+        position: SubtitlePosition = "bottom"
         if _matches_any(lower, ["center", "중앙"]):
             position = "center"
         if _matches_any(lower, ["top", "상단"]):
@@ -156,7 +162,7 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
 
         operations.append(
             SubtitleOperation(
-                style=style,
+                style=subtitle_style,
                 language="auto",
                 font_size=24,
                 position=position,
@@ -273,21 +279,21 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
 
     if _matches_any(lower, ["페이드", "fade", "전환 효과", "트랜지션", "transition"]):
         rule_matched = True
-        style: str = "fade"
+        transition_style: TransitionStyle = "fade"
         if _matches_any(lower, ["dissolve", "디졸브"]):
-            style = "dissolve"
+            transition_style = "dissolve"
         elif _matches_any(lower, ["wipe", "와이프"]):
-            style = "wipe"
+            transition_style = "wipe"
 
         # Add transitions between all consecutive scenes
         for i in range(len(analysis.scenes) - 1):
             operations.append(TransitionOperation(
-                style=style,
+                style=transition_style,
                 duration=0.5,
                 between=(i, i + 1),
             ))
         if analysis.scenes:
-            summary_parts.append(f"Add {style} transitions between scenes")
+            summary_parts.append(f"Add {transition_style} transitions between scenes")
 
     # ── Return ───────────────────────────────────────────────────────────
 
@@ -308,7 +314,7 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
     )
 
 
-def _detect_bgm_mood(text: str) -> str:
+def _detect_bgm_mood(text: str) -> BgmMood:
     """Detect BGM mood from instruction text.
 
     Args:
@@ -317,7 +323,7 @@ def _detect_bgm_mood(text: str) -> str:
     Returns:
         Mood string matching BGMOperation.mood literals.
     """
-    mood_keywords: dict[str, list[str]] = {
+    mood_keywords: dict[BgmMood, list[str]] = {
         "upbeat": ["신나는", "upbeat", "energetic", "활기", "밝은 음악", "경쾌"],
         "calm": ["잔잔한", "calm", "peaceful", "편안", "차분"],
         "dramatic": ["드라마틱", "dramatic", "epic", "웅장", "긴장"],
@@ -337,7 +343,7 @@ def _plan_with_llm(
     instruction: str,
     model: str,
     api_key: str,
-    preferences: "UserPreferences | None" = None,
+    preferences: UserPreferences | None = None,
 ) -> EditPlan:
     """Create an edit plan using OpenAI's API.
 
@@ -432,7 +438,7 @@ def _plan_with_llm(
 
 def _parse_llm_response(data: dict, instruction: str) -> EditPlan:
     """Parse LLM JSON response into an EditPlan."""
-    operations = []
+    operations: list[EditOperation] = []
 
     for op_data in data.get("operations", []):
         op_type = op_data.get("type")
@@ -449,16 +455,16 @@ def _parse_llm_response(data: dict, instruction: str) -> EditPlan:
         elif op_type == "subtitle":
             operations.append(
                 SubtitleOperation(
-                    style=op_data.get("style", "default"),
+                    style=cast(SubtitleStyle, op_data.get("style", "default")),
                     language=op_data.get("language", "auto"),
                     font_size=int(op_data.get("font_size", 24)),
-                    position=op_data.get("position", "bottom"),
+                    position=cast(SubtitlePosition, op_data.get("position", "bottom")),
                 )
             )
         elif op_type == "bgm":
             operations.append(
                 BGMOperation(
-                    mood=op_data.get("mood", "calm"),
+                    mood=cast(BgmMood, op_data.get("mood", "calm")),
                     volume=float(op_data.get("volume", 15.0)),
                     fade_in=float(op_data.get("fade_in", 2.0)),
                     fade_out=float(op_data.get("fade_out", 2.0)),
@@ -467,7 +473,10 @@ def _parse_llm_response(data: dict, instruction: str) -> EditPlan:
         elif op_type == "colorgrade":
             operations.append(
                 ColorGradeOperation(
-                    preset=op_data.get("preset", "bright"),
+                    preset=cast(
+                        Literal["bright", "warm", "cool", "cinematic", "vintage"],
+                        op_data.get("preset", "bright"),
+                    ),
                     intensity=float(op_data.get("intensity", 50.0)),
                 )
             )
@@ -479,7 +488,7 @@ def _parse_llm_response(data: dict, instruction: str) -> EditPlan:
                 between_tuple = (0, 1)
             operations.append(
                 TransitionOperation(
-                    style=op_data.get("style", "fade"),
+                    style=cast(TransitionStyle, op_data.get("style", "fade")),
                     duration=float(op_data.get("duration", 0.5)),
                     between=between_tuple,
                 )
@@ -558,10 +567,9 @@ def _estimate_duration(analysis: VideoAnalysis, operations: list) -> float:
     for op in operations:
         if isinstance(op, CutOperation) and op.action == "remove":
             removed += op.end_time - op.start_time
-        elif isinstance(op, SpeedOperation):
+        elif isinstance(op, SpeedOperation) and op.start_time <= 0.05:
             # Simplistic: if whole-video speed, apply factor to total
-            if op.start_time <= 0.05:
-                speed_factor = op.factor
+            speed_factor = op.factor
 
     base_duration = max(0, analysis.duration - removed)
     return base_duration / speed_factor if speed_factor > 0 else base_duration

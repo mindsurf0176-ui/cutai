@@ -29,7 +29,7 @@ What is **not** fully polished yet:
 
 - desktop preview is currently frame-scrubbing oriented, not full playback
 - desktop UX still focuses on the core MVP flow rather than exposing every CLI capability
-- release packaging/signing/notarization still needs explicit machine-by-machine validation
+- release packaging/signing/notarization now has documented helper scripts, but still needs one successful credential-backed machine validation run before external alpha distribution
 - edge-case coverage for unusual codecs, long videos, and broader creator workflows is still growing
 
 If you want the most complete experience today, start with the **CLI**. If you want the simplest workflow for demoing the product direction, try the **desktop alpha**.
@@ -149,7 +149,7 @@ If you run only the frontend with `pnpm dev`, backend auto-start is not availabl
 cutai server --host 127.0.0.1 --port 18910
 ```
 
-See [`desktop/README.md`](./desktop/README.md) for the desktop-specific guide and [`desktop/QA_CHECKLIST.md`](./desktop/QA_CHECKLIST.md) for a practical final-pass validation checklist.
+See [`desktop/README.md`](./desktop/README.md) for the desktop-specific guide, [`desktop/RELEASE_MACOS.md`](./desktop/RELEASE_MACOS.md) for the macOS signing/notarization release path, and [`desktop/QA_CHECKLIST.md`](./desktop/QA_CHECKLIST.md) for a practical final-pass validation checklist.
 
 ---
 

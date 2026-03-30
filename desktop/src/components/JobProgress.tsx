@@ -1,21 +1,95 @@
-import { useEffect, useRef } from 'react';
-import { Loader2, CheckCircle, XCircle, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Loader2, CheckCircle, XCircle, X, Download, ExternalLink } from 'lucide-react';
 import * as Progress from '@radix-ui/react-progress';
 import { useApp } from '../store';
-import { connectProgressWs, pollJob, getAnalysis } from '../api';
+import {
+  connectProgressWs,
+  exportPathOrUrl,
+  getAnalysis,
+  getDownloadUrl,
+  getSuggestedExportFilename,
+  getPreviewDownloadUrl,
+  isNativeDesktop,
+  openPathOrUrl,
+  pollJob,
+  revealPathOrUrl,
+} from '../api';
+import type {
+  EditPlan,
+  Job,
+  MediaJobResult,
+  OutputHistoryItem,
+  VideoAnalysis,
+} from '../types';
+import ExportSuccessNotice from './ExportSuccessNotice';
+import { formatRenderQualityDetails } from '../renderQuality';
+
+function looksLikeEditPlan(result: Job['result']): result is EditPlan {
+  return Boolean(
+    result &&
+    typeof result === 'object' &&
+    'instruction' in result &&
+    'operations' in result &&
+    Array.isArray((result as EditPlan).operations)
+  );
+}
+
+function looksLikeAnalysisResult(
+  result: Job['result']
+): result is { analysis: VideoAnalysis } {
+  return Boolean(result && typeof result === 'object' && 'analysis' in result);
+}
+
+function looksLikeMediaResult(result: Job['result']): result is MediaJobResult {
+  return Boolean(result && typeof result === 'object' && 'output_path' in result);
+}
+
+function buildRecentOutputItem(
+  kind: 'preview' | 'render',
+  job: Job,
+  media: MediaJobResult,
+  videoId: string | null,
+  originalName: string | null | undefined
+): OutputHistoryItem {
+  return {
+    kind,
+    job_id: job.job_id,
+    output_path: media.output_path,
+    resolution: media.resolution,
+    render_preset: media.render_preset,
+    subtitle_export_mode: media.subtitle_export_mode,
+    subtitle_path: media.subtitle_path,
+    video_id: videoId,
+    original_name: originalName ?? null,
+    completed_at: new Date().toISOString(),
+  };
+}
 
 export default function JobProgress() {
   const { state, dispatch } = useApp();
   const { activeJob } = state;
   const wsRef = useRef<WebSocket | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [exportFeedback, setExportFeedback] = useState<{
+    jobId: string;
+    savedPath: string;
+    assetLabel: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!activeJob || activeJob.status === 'completed' || activeJob.status === 'failed') {
       return;
     }
 
-    // Try WebSocket first
+    const syncJob = async () => {
+      try {
+        const job = await pollJob(activeJob.job_id);
+        dispatch({ type: 'SET_ACTIVE_JOB', job });
+      } catch {
+        // ignore sync errors
+      }
+    };
+
     const ws = connectProgressWs(
       activeJob.job_id,
       (data) => {
@@ -24,17 +98,16 @@ export default function JobProgress() {
           progress: data.progress,
           status: data.status as 'running' | 'completed' | 'failed',
         });
+
+        if (data.status === 'completed' || data.status === 'failed') {
+          void syncJob();
+        }
       },
       () => {
-        // WebSocket closed — fall back to polling
         pollRef.current = setInterval(async () => {
           try {
             const job = await pollJob(activeJob.job_id);
-            dispatch({
-              type: 'UPDATE_JOB_PROGRESS',
-              progress: job.progress,
-              status: job.status,
-            });
+            dispatch({ type: 'SET_ACTIVE_JOB', job });
             if (job.status === 'completed' || job.status === 'failed') {
               if (pollRef.current) clearInterval(pollRef.current);
             }
@@ -53,49 +126,162 @@ export default function JobProgress() {
     };
   }, [activeJob?.job_id, activeJob?.status, dispatch]);
 
-  // Auto-dismiss completed jobs
   useEffect(() => {
-    if (activeJob?.status === 'completed') {
-      let isSubscribed = true;
+    if (activeJob?.status !== 'completed') return;
 
-      const handleCompletion = async () => {
-        if (activeJob.type === 'analysis' && state.videoId) {
-          try {
-            const analysisData = activeJob.result || await getAnalysis(state.videoId);
-            if (isSubscribed) {
-              dispatch({ type: 'SET_ANALYSIS', analysis: analysisData as any });
-            }
-          } catch (e) {
-            console.error('Failed to load analysis:', e);
-          }
+    let isSubscribed = true;
+
+    const handleCompletion = async () => {
+      try {
+        const completedJob = activeJob.result ? activeJob : await pollJob(activeJob.job_id);
+        if (!isSubscribed) return;
+
+        if (
+          !activeJob.result
+          || activeJob.status !== completedJob.status
+          || activeJob.progress !== completedJob.progress
+          || activeJob.error !== completedJob.error
+        ) {
+          dispatch({ type: 'SET_ACTIVE_JOB', job: completedJob });
         }
 
-        if (isSubscribed) {
+        if (completedJob.type === 'analysis' && state.videoId) {
+          const analysisData = looksLikeAnalysisResult(completedJob.result)
+            ? completedJob.result.analysis
+            : await getAnalysis(state.videoId);
+          if (!isSubscribed) return;
+          dispatch({ type: 'SET_ANALYSIS', analysis: analysisData });
+        }
+
+        if (completedJob.type === 'highlights' && looksLikeEditPlan(completedJob.result)) {
+          dispatch({ type: 'SET_EDIT_PLAN', plan: completedJob.result });
+          dispatch({ type: 'SET_SIDEBAR_TAB', tab: 'edit' });
+          dispatch({ type: 'SET_VIEW', view: 'editor' });
+        }
+
+        if (completedJob.type === 'render') {
+          if (looksLikeMediaResult(completedJob.result)) {
+            dispatch({
+              type: 'ADD_RECENT_OUTPUT',
+              item: buildRecentOutputItem(
+                'render',
+                completedJob,
+                completedJob.result,
+                state.videoId,
+                state.videoInfo?.original_name
+              ),
+            });
+            dispatch({
+              type: 'SET_RENDER_RESULT',
+              render: { job_id: completedJob.job_id, ...completedJob.result },
+            });
+          }
+          dispatch({ type: 'SET_VIEW', view: 'editor' });
+        }
+
+        if (completedJob.type === 'preview' && looksLikeMediaResult(completedJob.result)) {
+          dispatch({
+            type: 'ADD_RECENT_OUTPUT',
+            item: buildRecentOutputItem(
+              'preview',
+              completedJob,
+              completedJob.result,
+              state.videoId,
+              state.videoInfo?.original_name
+            ),
+          });
+          dispatch({
+            type: 'SET_PREVIEW_RESULT',
+            preview: { job_id: completedJob.job_id, ...completedJob.result },
+          });
+          dispatch({ type: 'SET_VIEW', view: 'editor' });
+        }
+
+        if (completedJob.type === 'analysis') {
           setTimeout(() => {
             if (isSubscribed) {
               dispatch({ type: 'CLEAR_JOB' });
-              if (state.view === 'rendering') {
-                dispatch({ type: 'SET_VIEW', view: 'editor' });
-              }
             }
           }, 3000);
         }
-      };
+      } catch (e) {
+        console.error('Failed to finalize job:', e);
+      }
+    };
 
-      handleCompletion();
+    void handleCompletion();
 
-      return () => {
-        isSubscribed = false;
-      };
+    return () => {
+      isSubscribed = false;
+    };
+  }, [activeJob, state.videoId, dispatch]);
+
+  useEffect(() => {
+    if (!activeJob || exportFeedback?.jobId === activeJob.job_id) {
+      return;
     }
-  }, [activeJob?.status, activeJob?.type, activeJob?.result, state.videoId, state.view, dispatch]);
+
+    setExportFeedback(null);
+  }, [activeJob?.job_id, exportFeedback?.jobId]);
 
   if (!activeJob) return null;
 
+  const previewResultData = looksLikeMediaResult(activeJob.result) ? activeJob.result : null;
+  const renderResultData = looksLikeMediaResult(activeJob.result) ? activeJob.result : null;
+  const hasRenderResult = activeJob.type === 'render'
+    && activeJob.status === 'completed'
+    && Boolean(renderResultData);
+  const renderQualityDetails = formatRenderQualityDetails(renderResultData);
+  const hasPreviewResult = activeJob.type === 'preview'
+    && activeJob.status === 'completed'
+    && Boolean(previewResultData);
+  const previewQualityDetails = formatRenderQualityDetails(previewResultData);
+  const nativeDesktop = isNativeDesktop();
+  const defaultPreviewFileName = state.videoInfo
+    ? getSuggestedExportFilename(
+        state.videoInfo.original_name,
+        'preview',
+        previewResultData?.output_path ?? '',
+        previewResultData?.resolution
+      )
+    : null;
+  const defaultRenderFileName = state.videoInfo
+    ? getSuggestedExportFilename(
+        state.videoInfo.original_name,
+        'render',
+        renderResultData?.output_path ?? '',
+        renderResultData?.resolution
+      )
+    : null;
+
+  async function handleExport(kind: 'preview' | 'render', outputPath: string, fallbackUrl: string) {
+    if (!activeJob) {
+      return;
+    }
+
+    const defaultFileName = kind === 'preview'
+      ? defaultPreviewFileName ?? 'cutai-video-preview.mp4'
+      : defaultRenderFileName ?? 'cutai-video-render.mp4';
+    const savedPath = await exportPathOrUrl(outputPath, defaultFileName, fallbackUrl);
+
+    if (nativeDesktop && typeof savedPath === 'string' && savedPath) {
+      setExportFeedback({
+        jobId: activeJob.job_id,
+        savedPath,
+        assetLabel: kind === 'render' ? 'Render' : 'Preview',
+      });
+    }
+  }
+
   const statusText = {
-    pending: 'Preparing...',
-    running: activeJob.progress > 0 ? `Processing... ${activeJob.progress}%` : 'Processing...',
-    completed: 'Done!',
+    pending: activeJob.type === 'preview' ? 'Preparing preview...' : 'Preparing...',
+    running:
+      activeJob.progress > 0
+        ? `${activeJob.type === 'preview' ? 'Generating preview' : 'Processing'}... ${activeJob.progress}%`
+        : activeJob.type === 'preview'
+          ? 'Generating preview...'
+          : 'Processing...',
+    completed: hasRenderResult ? 'Render complete' : hasPreviewResult ? 'Preview ready' : 'Done',
     failed: activeJob.error ?? 'Failed',
   }[activeJob.status];
 
@@ -114,14 +300,14 @@ export default function JobProgress() {
   }[activeJob.status];
 
   return (
-    <div className="fixed bottom-20 right-6 z-50 w-72 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4">
+    <div className="fixed bottom-20 right-6 z-50 w-80 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4">
       <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <StatusIcon
             size={16}
             className={`${statusColor} ${activeJob.status === 'running' || activeJob.status === 'pending' ? 'animate-spin' : ''}`}
           />
-          <span className="text-sm font-medium">{statusText}</span>
+          <span className="text-sm font-medium truncate">{statusText}</span>
         </div>
         <button
           onClick={() => dispatch({ type: 'CLEAR_JOB' })}
@@ -131,7 +317,7 @@ export default function JobProgress() {
         </button>
       </div>
 
-      <div className="px-4 pb-3">
+      <div className="px-4 pb-3 space-y-3">
         <Progress.Root
           className="relative w-full h-1.5 overflow-hidden rounded-full bg-[var(--bg-primary)]"
           value={activeJob.progress}
@@ -141,12 +327,135 @@ export default function JobProgress() {
               activeJob.status === 'completed'
                 ? 'bg-[var(--success)]'
                 : activeJob.status === 'failed'
-                ? 'bg-[var(--error)]'
-                : 'bg-[var(--accent)]'
+                  ? 'bg-[var(--error)]'
+                  : 'bg-[var(--accent)]'
             }`}
             style={{ width: `${activeJob.status === 'completed' ? 100 : activeJob.progress}%` }}
           />
         </Progress.Root>
+
+        {activeJob.type && (
+          <p className="text-[11px] text-[var(--text-secondary)] capitalize">
+            {activeJob.type.replace('_', ' ')} job
+          </p>
+        )}
+
+        {nativeDesktop && exportFeedback?.jobId === activeJob.job_id && (
+          <ExportSuccessNotice
+            savedPath={exportFeedback.savedPath}
+            assetLabel={exportFeedback.assetLabel}
+            details={activeJob.type === 'render' ? renderQualityDetails : null}
+            onOpen={() => void openPathOrUrl(exportFeedback.savedPath)}
+            onReveal={() => void revealPathOrUrl(exportFeedback.savedPath)}
+            onDismiss={() => setExportFeedback(null)}
+          />
+        )}
+
+        {hasPreviewResult && (
+          <div className="space-y-2">
+            {previewQualityDetails && (
+              <p className="text-xs text-[var(--text-secondary)]">
+                Output: {previewQualityDetails}
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() =>
+                  void openPathOrUrl(
+                    previewResultData?.output_path ?? '',
+                    getPreviewDownloadUrl(activeJob.job_id)
+                  )
+                }
+                className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg border border-[var(--bg-tertiary)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+              >
+                <ExternalLink size={14} />
+                {nativeDesktop ? 'Open preview' : 'Open file'}
+              </button>
+              {nativeDesktop ? (
+                <button
+                  onClick={() =>
+                    void handleExport(
+                      'preview',
+                      previewResultData?.output_path ?? '',
+                      getPreviewDownloadUrl(activeJob.job_id)
+                    )
+                  }
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors"
+                >
+                  <Download size={14} />
+                  Save preview as
+                </button>
+              ) : (
+                <a
+                  href={getPreviewDownloadUrl(activeJob.job_id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors"
+                >
+                  <Download size={14} />
+                  Download preview
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
+        {hasRenderResult && (
+          <div className="space-y-2">
+            {renderQualityDetails && (
+              <p className="text-xs text-[var(--text-secondary)]">
+                Output: {renderQualityDetails}
+              </p>
+            )}
+            {renderResultData?.subtitle_path && (
+              <p
+                className="truncate text-xs text-[var(--text-secondary)]"
+                title={renderResultData.subtitle_path}
+              >
+                Subtitle file: {renderResultData.subtitle_path}
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() =>
+                  void openPathOrUrl(
+                    renderResultData?.output_path ?? '',
+                    getDownloadUrl(activeJob.job_id)
+                  )
+                }
+                className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg border border-[var(--bg-tertiary)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+              >
+                <ExternalLink size={14} />
+                {nativeDesktop ? 'Open render' : 'Open file'}
+              </button>
+              {nativeDesktop ? (
+                <button
+                  onClick={() =>
+                    void handleExport(
+                      'render',
+                      renderResultData?.output_path ?? '',
+                      getDownloadUrl(activeJob.job_id)
+                    )
+                  }
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors"
+                >
+                  <Download size={14} />
+                  Export render
+                </button>
+              ) : (
+                <a
+                  href={getDownloadUrl(activeJob.job_id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors"
+                >
+                  <Download size={14} />
+                  Download render
+                </a>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

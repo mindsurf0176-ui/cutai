@@ -16,6 +16,7 @@ import os
 import subprocess
 import tempfile
 import time
+from contextlib import suppress
 from pathlib import Path
 
 from cutai.models.types import SceneInfo
@@ -122,10 +123,8 @@ def _create_proxy_video(
 def _safe_remove(path: str | None) -> None:
     """Remove a file if it exists, ignoring errors."""
     if path:
-        try:
+        with suppress(OSError):
             os.remove(path)
-        except OSError:
-            pass
 
 
 def detect_scenes(
@@ -158,7 +157,7 @@ def detect_scenes(
     Returns:
         List of SceneInfo with start/end times and thumbnail paths.
     """
-    from scenedetect import ContentDetector, open_video, SceneManager
+    from scenedetect import ContentDetector, SceneManager, open_video
 
     from cutai.config import ensure_ffmpeg
 

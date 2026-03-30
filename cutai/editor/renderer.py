@@ -285,7 +285,6 @@ def _adjust_transcript_for_cuts(
     for seg in transcript:
         seg_start = seg.start_time
         seg_end = seg.end_time
-        seg_duration = seg_end - seg_start
 
         kept_start = seg_start
         kept_end = seg_end

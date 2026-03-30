@@ -83,6 +83,17 @@ pnpm build
 pnpm tauri build
 ```
 
+### macOS external-alpha release flow
+
+Use the dedicated release guide and helper scripts in this folder:
+
+- [`RELEASE_MACOS.md`](./RELEASE_MACOS.md)
+- `pnpm release:macos:build`
+- `pnpm release:macos:notarize`
+- `pnpm release:macos:verify`
+
+The repo now includes reproducible helper scripts for app signing, DMG signing, notarization, stapling, and Gatekeeper-oriented verification. Apple credentials/certificates are still required for the actual trust-bearing steps.
+
 ## Manual QA
 
 Use the validation checklist in [`QA_CHECKLIST.md`](./QA_CHECKLIST.md) before calling the desktop flow release-ready.
@@ -92,7 +103,7 @@ Use the validation checklist in [`QA_CHECKLIST.md`](./QA_CHECKLIST.md) before ca
 The desktop app is intentionally not pretending to be more finished than it is. Current gaps:
 
 - preview is frame-scrubbing oriented, not full timeline playback
-- packaging/signing/notarization still need explicit release validation
+- final credential-backed Developer ID signing/notarization still needs one full machine validation run before wider external sharing
 - browser dev mode requires manual backend startup
 - advanced edit flows from the CLI are not all exposed in the desktop UI yet
 - large/video-edge-case coverage still needs broader QA on real creator footage

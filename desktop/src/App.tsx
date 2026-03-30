@@ -1,13 +1,25 @@
 import { useReducer, useEffect, useCallback, useState } from 'react';
 import { Settings, Clapperboard, AlertCircle, X } from 'lucide-react';
 import { AppContext, appReducer, initialState, useApp } from './store';
+import type { AppState } from './store';
 import { canAutoStartBackend, healthCheck, startBackend } from './api';
+import { initializeAppState, persistPreviewResolution } from './previewResolutionStorage';
+import {
+  initializeRecentOutputHistoryState,
+  persistRecentOutputs,
+} from './recentOutputHistoryStorage';
+import { initializeRenderPresetState, persistRenderPreset } from './renderPresetStorage';
+import {
+  initializeSubtitleExportModeState,
+  persistSubtitleExportMode,
+} from './subtitleExportModeStorage';
 import Sidebar from './components/Sidebar';
 import BackendGate from './components/BackendGate';
 import DropZone from './components/DropZone';
 import VideoPreview from './components/VideoPreview';
 import EditPlanPanel from './components/EditPlanPanel';
 import StylePanel from './components/StylePanel';
+import HighlightsPanel from './components/HighlightsPanel';
 import InstructionBar from './components/InstructionBar';
 import JobProgress from './components/JobProgress';
 
@@ -16,7 +28,7 @@ interface AppMainContentProps {
   retryingBackend: boolean;
 }
 
-function AppMainContent({ onRetryBackend, retryingBackend }: AppMainContentProps) {
+export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainContentProps) {
   const { state } = useApp();
 
   if (state.backendStatus !== 'online') {
@@ -50,12 +62,34 @@ function AppMainContent({ onRetryBackend, retryingBackend }: AppMainContentProps
           <StylePanel />
         </div>
       )}
+      {state.sidebarTab === 'highlights' && (
+        <div className="w-72 border-l border-[var(--bg-tertiary)] bg-[var(--bg-secondary)]">
+          <HighlightsPanel />
+        </div>
+      )}
     </div>
   );
 }
 
 export default function App() {
-  const [state, dispatch] = useReducer(appReducer, initialState);
+  const [state, dispatch] = useReducer(
+    appReducer,
+    initialState,
+    (baseState: AppState) =>
+      initializeSubtitleExportModeState(
+        initializeRenderPresetState(
+          initializeRecentOutputHistoryState(
+            initializeAppState(
+              baseState,
+              typeof window === 'undefined' ? undefined : window.localStorage
+            ),
+            typeof window === 'undefined' ? undefined : window.localStorage
+          ),
+          typeof window === 'undefined' ? undefined : window.localStorage
+        ),
+        typeof window === 'undefined' ? undefined : window.localStorage
+      )
+  );
   const [retryingBackend, setRetryingBackend] = useState(false);
 
   const markBackendOnline = useCallback(() => {
@@ -124,10 +158,37 @@ export default function App() {
     return () => clearInterval(interval);
   }, [markBackendOffline, markBackendOnline, state.backendOnline]);
 
+  useEffect(() => {
+    persistPreviewResolution(
+      typeof window === 'undefined' ? undefined : window.localStorage,
+      state.previewResolution
+    );
+  }, [state.previewResolution]);
+
+  useEffect(() => {
+    persistRenderPreset(
+      typeof window === 'undefined' ? undefined : window.localStorage,
+      state.renderPreset
+    );
+  }, [state.renderPreset]);
+
+  useEffect(() => {
+    persistSubtitleExportMode(
+      typeof window === 'undefined' ? undefined : window.localStorage,
+      state.subtitleExportMode
+    );
+  }, [state.subtitleExportMode]);
+
+  useEffect(() => {
+    persistRecentOutputs(
+      typeof window === 'undefined' ? undefined : window.localStorage,
+      state.recentOutputs
+    );
+  }, [state.recentOutputs]);
+
   return (
     <AppContext.Provider value={{ state, dispatch }}>
       <div className="flex flex-col h-screen w-screen bg-[var(--bg-primary)]">
-        {/* Header */}
         <header className="flex items-center justify-between px-4 h-12 bg-[var(--bg-secondary)] border-b border-[var(--bg-tertiary)] flex-shrink-0">
           <div className="flex items-center gap-2">
             <Clapperboard size={18} className="text-[var(--accent)]" />
@@ -138,7 +199,6 @@ export default function App() {
           </button>
         </header>
 
-        {/* Error banner */}
         {state.error && (
           <div className="flex items-center gap-2 px-4 py-2 bg-[var(--error)]/10 border-b border-[var(--error)]/20 text-sm text-[var(--error)]">
             <AlertCircle size={14} />
@@ -152,7 +212,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Main area */}
         <div className="flex flex-1 min-h-0">
           <Sidebar />
           <main className="flex-1 flex flex-col min-h-0">
@@ -163,10 +222,7 @@ export default function App() {
           </main>
         </div>
 
-        {/* Instruction bar */}
         <InstructionBar />
-
-        {/* Job progress overlay */}
         <JobProgress />
       </div>
     </AppContext.Provider>

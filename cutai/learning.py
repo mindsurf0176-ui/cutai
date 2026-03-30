@@ -14,9 +14,9 @@ from pathlib import Path
 
 from cutai.config import CONFIG_DIR
 from cutai.models.types import (
-    CutOperation,
     BGMOperation,
     ColorGradeOperation,
+    CutOperation,
     EditPlan,
     FeedbackEntry,
     InstructionMemory,

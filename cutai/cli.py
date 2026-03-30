@@ -41,6 +41,7 @@ from rich.table import Table
 
 from cutai.models.types import SubtitleOperation
 
+
 def _version_callback(value: bool) -> None:
     if value:
         from cutai import __version__
@@ -54,6 +55,8 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 console = Console()
+STYLE_LEARN_VIDEOS_ARG = typer.Argument(help="Videos to learn style from")
+MULTI_VIDEOS_ARG = typer.Argument(help="Video files to combine")
 
 @app.callback()
 def main(
@@ -426,7 +429,8 @@ def highlights(
         )
 
         from cutai.analyzer import analyze_with_engagement
-        from cutai.highlight import auto_highlight_duration, generate_highlights as gen_hl
+        from cutai.highlight import auto_highlight_duration
+        from cutai.highlight import generate_highlights as gen_hl
 
         with Progress(
             SpinnerColumn(),
@@ -602,7 +606,7 @@ def style_apply(
 
 @app.command()
 def style_learn(
-    videos: list[str] = typer.Argument(help="Videos to learn style from"),
+    videos: list[str] = STYLE_LEARN_VIDEOS_ARG,
     output: str = typer.Option("learned_style.yaml", "--output", "-o", help="Output YAML path"),
     name: str = typer.Option("learned", "--name", "-n", help="Style name"),
     model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
@@ -810,7 +814,7 @@ def preview(
 
 @app.command()
 def multi(
-    videos: list[str] = typer.Argument(help="Video files to combine"),
+    videos: list[str] = MULTI_VIDEOS_ARG,
     instruction: str = typer.Option("", "--instruction", "-i", help="Editing instruction"),
     output: str = typer.Option("combined_output.mp4", "--output", "-o", help="Output video path"),
     model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
@@ -960,6 +964,7 @@ def server(
     _setup_logging(verbose)
     try:
         import uvicorn
+
         from cutai.server import app as api_app
 
         console.print(
@@ -977,7 +982,7 @@ def server(
             f"[red]Error:[/red] Missing server dependency: {exc}\n"
             "Install with: pip install 'cutai[server]' or pip install fastapi uvicorn python-multipart"
         )
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 @app.command()
@@ -1001,7 +1006,6 @@ def style_show(
 
 def _display_engagement(analysis, report) -> None:
     """Display engagement scores as a rich table with colored bars."""
-    from cutai.models.types import EngagementReport
 
     console.print()
     console.print(Panel(
@@ -1082,7 +1086,6 @@ def _display_engagement(analysis, report) -> None:
 
 def _display_dna(dna) -> None:
     """Display an EditDNA in a rich panel with tables."""
-    from cutai.models.types import EditDNA
 
     console.print()
     console.print(Panel(
@@ -1144,7 +1147,6 @@ def _display_dna(dna) -> None:
 
 def _display_analysis(analysis) -> None:
     """Display video analysis in a rich table."""
-    from cutai.models.types import VideoAnalysis
 
     table = Table(title="📊 Video Analysis", show_header=True, header_style="bold cyan")
     table.add_column("Property", style="dim")
@@ -1191,7 +1193,7 @@ def _display_analysis(analysis) -> None:
 
 def _display_plan(plan) -> None:
     """Display edit plan in a rich format."""
-    from cutai.models.types import CutOperation, EditPlan, SubtitleOperation
+    from cutai.models.types import CutOperation, SubtitleOperation
 
     console.print()
     console.print(
