@@ -12,6 +12,7 @@ import logging
 import subprocess
 import tempfile
 import uuid
+from contextlib import asynccontextmanager
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,7 +23,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-app = FastAPI(title="CutAI", version="0.1.0", description="AI Video Editor API")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Ensure upload/output directories exist during app startup."""
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    yield
+
+
+app = FastAPI(
+    title="CutAI",
+    version="0.1.0",
+    description="AI Video Editor API",
+    lifespan=lifespan,
+)
 
 # CORS for Tauri (localhost)
 app.add_middleware(
@@ -140,16 +155,6 @@ class JobResponse(BaseModel):
     progress: float = 0.0  # 0-100
     result: dict | None = None
     error: str | None = None
-
-
-# ── Startup ──────────────────────────────────────────────────────────────────
-
-
-@app.on_event("startup")
-async def startup() -> None:
-    """Ensure upload/output directories exist on startup."""
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
