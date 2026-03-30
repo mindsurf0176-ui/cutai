@@ -33,6 +33,20 @@ def test_resolve_style_source_accepts_bare_name_and_explicit_extension():
     assert explicit == bare
 
 
+def test_lifespan_startup_creates_upload_and_output_dirs(tmp_path: Path, monkeypatch):
+    upload_dir = tmp_path / "uploads"
+    output_dir = tmp_path / "outputs"
+    monkeypatch.setattr(server, "UPLOAD_DIR", upload_dir)
+    monkeypatch.setattr(server, "OUTPUT_DIR", output_dir)
+
+    assert not upload_dir.exists()
+    assert not output_dir.exists()
+
+    with TestClient(server.app):
+        assert upload_dir.is_dir()
+        assert output_dir.is_dir()
+
+
 def test_plan_request_uses_style_preset_when_present(monkeypatch, sample_analysis, tmp_path: Path):
     server.videos.clear()
     server.jobs.clear()
