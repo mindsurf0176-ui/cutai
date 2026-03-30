@@ -15,7 +15,6 @@ Scoring signals (weighted sum, normalized to 0-100):
 
 from __future__ import annotations
 
-import array
 import logging
 import math
 import struct
@@ -159,10 +158,7 @@ def _score_audio_energy(scenes: list[SceneInfo]) -> list[float]:
 
     scores: list[float] = []
     for scene in scenes:
-        if span > 0:
-            normalized = (scene.avg_energy - e_min) / span  # 0.0 - 1.0
-        else:
-            normalized = 0.5  # all same energy
+        normalized = (scene.avg_energy - e_min) / span if span > 0 else 0.5  # 0.0 - 1.0/all same energy
 
         base = normalized * 90.0  # 0-90
         bonus = 10.0 if scene.has_speech else 0.0

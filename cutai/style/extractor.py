@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-import struct
 import subprocess
 from pathlib import Path
 from statistics import mean, median, stdev

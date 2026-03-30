@@ -38,7 +38,7 @@ def create_edit_plan(
     instruction: str,
     llm_model: str = "gpt-4o",
     use_llm: bool = True,
-    preferences: "UserPreferences | None" = None,
+    preferences: UserPreferences | None = None,
 ) -> EditPlan:
     """Create an edit plan from a video analysis and instruction.
 
@@ -337,7 +337,7 @@ def _plan_with_llm(
     instruction: str,
     model: str,
     api_key: str,
-    preferences: "UserPreferences | None" = None,
+    preferences: UserPreferences | None = None,
 ) -> EditPlan:
     """Create an edit plan using OpenAI's API.
 
@@ -558,10 +558,9 @@ def _estimate_duration(analysis: VideoAnalysis, operations: list) -> float:
     for op in operations:
         if isinstance(op, CutOperation) and op.action == "remove":
             removed += op.end_time - op.start_time
-        elif isinstance(op, SpeedOperation):
+        elif isinstance(op, SpeedOperation) and op.start_time <= 0.05:
             # Simplistic: if whole-video speed, apply factor to total
-            if op.start_time <= 0.05:
-                speed_factor = op.factor
+            speed_factor = op.factor
 
     base_duration = max(0, analysis.duration - removed)
     return base_duration / speed_factor if speed_factor > 0 else base_duration

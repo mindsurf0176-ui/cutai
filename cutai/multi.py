@@ -11,6 +11,7 @@ import logging
 import os
 import subprocess
 import tempfile
+from contextlib import suppress
 from pathlib import Path
 
 from cutai.config import ensure_ffmpeg, ensure_ffprobe
@@ -333,10 +334,8 @@ def _concat_videos(video_paths: list[str], output_path: str) -> str:
         logger.debug("FFmpeg concat stderr: %s", result.stderr.decode()[:500])
     finally:
         # Clean up the temp list file
-        try:
+        with suppress(OSError):
             os.unlink(list_path)
-        except OSError:
-            pass
 
     return output_path
 

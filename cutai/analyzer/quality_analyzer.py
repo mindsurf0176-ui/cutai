@@ -10,7 +10,6 @@ import os
 import re
 import subprocess
 import tempfile
-from pathlib import Path
 
 from cutai.config import ensure_ffmpeg, ensure_ffprobe
 from cutai.models.types import QualityReport, SceneInfo, TimeRange
@@ -150,7 +149,7 @@ def _parse_silence_output(output: str) -> list[TimeRange]:
         if end_match:
             ends.append(float(end_match.group(1)))
 
-    for s, e in zip(starts, ends):
+    for s, e in zip(starts, ends, strict=False):
         segments.append(TimeRange(start=round(s, 3), end=round(e, 3)))
 
     logger.info("Found %d silent segments", len(segments))

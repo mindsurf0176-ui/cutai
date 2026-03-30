@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import random
-from statistics import mean
 
 from cutai.models.types import (
     BGMOperation,
@@ -201,10 +200,7 @@ def _apply_transitions(
     ]
 
     def _is_removed(scene: SceneInfo) -> bool:
-        for rs, re_ in removed_ranges:
-            if rs <= scene.start_time and re_ >= scene.end_time:
-                return True
-        return False
+        return any(rs <= scene.start_time and re_ >= scene.end_time for rs, re_ in removed_ranges)
 
     kept = [s for s in scenes if not _is_removed(s)]
     if len(kept) < 2:

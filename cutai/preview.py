@@ -159,11 +159,7 @@ def _create_proxy_analysis(
     Returns:
         New VideoAnalysis with adjusted width/height.
     """
-    if analysis.height <= 0:
-        # Avoid division by zero
-        scale_factor = 1.0
-    else:
-        scale_factor = resolution / analysis.height
+    scale_factor = 1.0 if analysis.height <= 0 else resolution / analysis.height
 
     new_width = int(analysis.width * scale_factor)
     # Ensure width is even (required by many codecs)

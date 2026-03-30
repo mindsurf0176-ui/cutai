@@ -11,9 +11,14 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from cutai.config import ensure_ffmpeg, ensure_ffprobe, load_config
+from cutai.config import ensure_ffmpeg, ensure_ffprobe
+from cutai.config import load_config as load_config
 from cutai.models.types import VideoAnalysis
+
+if TYPE_CHECKING:
+    from cutai.models.types import EngagementReport
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +199,7 @@ def _get_video_metadata(video_path: str) -> dict:
 def analyze_with_engagement(
     video_path: str,
     **kwargs,
-) -> tuple[VideoAnalysis, "EngagementReport"]:
+) -> tuple[VideoAnalysis, EngagementReport]:
     """Run full analysis plus engagement scoring.
 
     Convenience wrapper that chains ``analyze_video`` with
@@ -210,7 +215,6 @@ def analyze_with_engagement(
     analysis = analyze_video(video_path, **kwargs)
 
     from cutai.analyzer.engagement import compute_engagement_scores
-    from cutai.models.types import EngagementReport  # noqa: F811
 
     engagement = compute_engagement_scores(analysis, video_path)
     return analysis, engagement
@@ -218,8 +222,6 @@ def analyze_with_engagement(
 
 def _is_scene_silent(scene, quality) -> bool:
     """Check if a scene overlaps significantly with silent segments."""
-    from cutai.models.types import QualityReport
-
     scene_duration = scene.duration
     if scene_duration <= 0:
         return True

@@ -9,17 +9,17 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import shutil
 import subprocess
 import tempfile
 import uuid
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import FastAPI, File, UploadFile, WebSocket, HTTPException, Query, BackgroundTasks
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 app = FastAPI(title="CutAI", version="0.1.0", description="AI Video Editor API")
@@ -80,6 +80,7 @@ OUTPUT_DIR = Path(tempfile.gettempdir()) / "cutai_outputs"
 # In-memory registries (ephemeral, single-user desktop use)
 videos: dict[str, dict[str, Any]] = {}  # video_id -> {path, original_name, ...}
 jobs: dict[str, dict[str, Any]] = {}    # job_id -> {status, result, error, progress}
+UPLOAD_VIDEO_FILE = File(...)
 
 
 # ── Request/Response Models ──────────────────────────────────────────────────
@@ -250,7 +251,7 @@ def _get_completed_media_job(job_id: str, expected_type: str) -> tuple[JobRespon
 
 
 @app.post("/api/videos/upload")
-async def upload_video(file: UploadFile = File(...)) -> dict:
+async def upload_video(file: UploadFile = UPLOAD_VIDEO_FILE) -> dict:
     """Upload a video file. Returns video_id and basic info."""
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
@@ -356,7 +357,6 @@ async def _run_analysis(
     jobs[job_id]["status"] = "running"
     jobs[job_id]["progress"] = 5.0
     try:
-        import os
         from pathlib import Path as _Path
 
         from cutai.analyzer import _extract_audio_cached, _get_video_metadata, _is_scene_silent
@@ -1052,10 +1052,8 @@ async def ws_progress(websocket: WebSocket, job_id: str) -> None:
     except Exception:
         pass  # Client disconnected
     finally:
-        try:
+        with suppress(Exception):
             await websocket.close()
-        except Exception:
-            pass
 
 
 # ── 8. System ────────────────────────────────────────────────────────────────

@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from collections import Counter
 from statistics import mean
-from typing import get_type_hints
 
 from cutai.models.types import (
     AudioDNA,

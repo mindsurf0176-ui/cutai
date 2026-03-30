@@ -19,13 +19,11 @@ Example:
 from __future__ import annotations
 
 import logging
-import sys
+from contextlib import suppress
 from pathlib import Path
 
-try:
+with suppress(ImportError):
     import readline  # noqa: F401 — enables input history
-except ImportError:
-    pass  # readline is nice-to-have; don't crash without it
 
 from rich.console import Console
 from rich.panel import Panel
@@ -50,9 +48,9 @@ def _load_learning():
     """Lazy import of learning module."""
     from cutai.learning import (
         load_preferences,
-        save_preferences,
-        record_instruction,
         record_feedback,
+        record_instruction,
+        save_preferences,
         suggest_defaults,
     )
     return load_preferences, save_preferences, record_instruction, record_feedback, suggest_defaults
@@ -314,9 +312,8 @@ class ChatSession:
         for op in operations:
             if isinstance(op, CutOperation) and op.action == "remove":
                 removed += op.end_time - op.start_time
-            elif isinstance(op, SpeedOperation):
-                if op.start_time <= 0.05:
-                    speed_factor = op.factor
+            elif isinstance(op, SpeedOperation) and op.start_time <= 0.05:
+                speed_factor = op.factor
 
         base = max(0.0, self.analysis.duration - removed)
         return base / speed_factor if speed_factor > 0 else base
@@ -448,7 +445,7 @@ class ChatSession:
             )
             return
 
-        self.console.print(f"[blue]🎬 Rendering final video...[/blue]")
+        self.console.print("[blue]🎬 Rendering final video...[/blue]")
 
         try:
             result = render(
@@ -520,7 +517,7 @@ class ChatSession:
             self.console.print("[yellow]No style applied (no operations).[/yellow]")
             return
 
-        self.console.print(f"\n[bold]Current style summary:[/bold]")
+        self.console.print("\n[bold]Current style summary:[/bold]")
         self.console.print(f"  {self.current_plan.summary or 'No summary'}")
 
     def _cmd_highlights(self, arg: str) -> None:
@@ -701,7 +698,7 @@ class ChatSession:
         self._last_action_desc = "Reset all operations"
 
         duration_str = _format_time(self.analysis.duration)
-        self.console.print(f"[cyan]🔄 Reset — all operations cleared.[/cyan]")
+        self.console.print("[cyan]🔄 Reset — all operations cleared.[/cyan]")
         self.console.print(f"   [dim]Timeline restored to {duration_str}[/dim]")
 
     def _cmd_quit(self, arg: str) -> None:

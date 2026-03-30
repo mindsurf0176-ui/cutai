@@ -5,11 +5,9 @@ All time values are in seconds (float).
 
 from __future__ import annotations
 
-from enum import Enum
-from typing import Annotated, Literal, Union
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
-
 
 # ── Basic types ──────────────────────────────────────────────────────────────
 
@@ -148,14 +146,7 @@ class SpeedOperation(BaseModel):
 # ── Union type for all operations ────────────────────────────────────────────
 
 EditOperation = Annotated[
-    Union[
-        CutOperation,
-        SubtitleOperation,
-        BGMOperation,
-        ColorGradeOperation,
-        TransitionOperation,
-        SpeedOperation,
-    ],
+    CutOperation | SubtitleOperation | BGMOperation | ColorGradeOperation | TransitionOperation | SpeedOperation,
     Field(discriminator="type"),
 ]
 
