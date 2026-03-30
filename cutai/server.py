@@ -12,8 +12,7 @@ import logging
 import subprocess
 import tempfile
 import uuid
-from contextlib import asynccontextmanager
-from contextlib import suppress
+from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, cast
