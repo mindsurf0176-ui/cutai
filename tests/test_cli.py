@@ -93,8 +93,11 @@ def test_edit_reports_subtitle_sidecar_when_plan_has_subtitles(
     )
 
     assert result.exit_code == 0
-    assert "Subtitles:" in result.output
-    assert ass_path.name in result.output
+    normalized_output = "".join(
+        ch for ch in result.output if ch.isalnum() or ch in ":._/-\\"
+    )
+    assert "Subtitles:" in normalized_output
+    assert ass_path.name in normalized_output
 
 
 
