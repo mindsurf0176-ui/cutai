@@ -234,4 +234,4 @@ def _is_scene_silent(scene, quality) -> bool:
             silent_overlap += overlap_end - overlap_start
 
     # Scene is "silent" if >80% overlaps with silence
-    return (silent_overlap / scene_duration) > 0.8
+    return bool((silent_overlap / scene_duration) > 0.8)

@@ -227,11 +227,11 @@ def _merge_analyses(analyses: list[VideoAnalysis]) -> VideoAnalysis:
             )
 
         # Offset silent segments
-        for seg in analysis.quality.silent_segments:
+        for silent_seg in analysis.quality.silent_segments:
             all_silent.append(
                 TimeRange(
-                    start=seg.start + cumulative_offset,
-                    end=seg.end + cumulative_offset,
+                    start=silent_seg.start + cumulative_offset,
+                    end=silent_seg.end + cumulative_offset,
                 )
             )
 
@@ -239,8 +239,8 @@ def _merge_analyses(analyses: list[VideoAnalysis]) -> VideoAnalysis:
         all_energy.extend(analysis.quality.audio_energy)
 
         # Track silence
-        for seg in analysis.quality.silent_segments:
-            total_silence_duration += seg.duration
+        for silent_seg in analysis.quality.silent_segments:
+            total_silence_duration += silent_seg.duration
 
         total_duration += analysis.duration
         cumulative_offset += analysis.duration

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import random
+from typing import Literal, TypedDict
 
 from cutai.models.types import (
     BGMOperation,
@@ -18,6 +19,15 @@ from cutai.models.types import (
 )
 
 logger = logging.getLogger(__name__)
+
+ColorTemperature = Literal["neutral", "warm", "cool"]
+ColorPreset = Literal["bright", "warm", "cool", "cinematic", "vintage"]
+
+
+class _PresetCriteria(TypedDict):
+    brightness: tuple[float, float]
+    saturation: tuple[float, float]
+    temp: ColorTemperature | None
 
 
 def apply_style(
@@ -245,7 +255,7 @@ def _apply_transitions(
 # ── Visual ───────────────────────────────────────────────────────────────────
 
 
-_PRESET_MAP = {
+_PRESET_MAP: dict[ColorPreset, _PresetCriteria] = {
     # (brightness_offset_range, saturation_range, temperature) → preset
     "bright": {"brightness": (0.02, 1.0), "saturation": (0.9, 1.5), "temp": None},
     "warm": {"brightness": (-0.5, 0.5), "saturation": (0.9, 1.5), "temp": "warm"},
@@ -260,7 +270,7 @@ def _apply_visual(style: EditDNA) -> ColorGradeOperation | None:
     vdna = style.visual
 
     # Score each preset by how well it matches the visual DNA
-    best_preset = "bright"
+    best_preset: ColorPreset = "bright"
     best_score = -999.0
 
     for preset_name, criteria in _PRESET_MAP.items():

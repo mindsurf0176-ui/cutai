@@ -80,8 +80,8 @@ def apply_transitions(
 
     # Build a map: (scene_i, scene_j) -> TransitionOperation
     transition_map: dict[tuple[int, int], TransitionOperation] = {}
-    for op in effective_ops:
-        transition_map[op.between] = op
+    for configured_transition in effective_ops:
+        transition_map[configured_transition.between] = configured_transition
 
     with tempfile.TemporaryDirectory(prefix="cutai_transition_") as tmpdir:
         # Step 1: Split video into segments
@@ -100,9 +100,9 @@ def apply_transitions(
         current = segments[0]
         for i in range(1, len(segments)):
             pair = (i - 1, i)
-            op = transition_map.get(pair)
+            pair_transition = transition_map.get(pair)
 
-            if op is None:
+            if pair_transition is None:
                 # No transition specified for this pair — simple concat
                 concat_output = str(Path(tmpdir) / f"concat_{i:04d}.mp4")
                 _concat_two(ffmpeg, current, segments[i], concat_output, tmpdir)
@@ -110,7 +110,7 @@ def apply_transitions(
             else:
                 # Apply xfade
                 xfade_output = str(Path(tmpdir) / f"xfade_{i:04d}.mp4")
-                _apply_xfade(ffmpeg, current, segments[i], op, xfade_output)
+                _apply_xfade(ffmpeg, current, segments[i], pair_transition, xfade_output)
                 current = xfade_output
 
         # Copy final result to output

@@ -7,6 +7,7 @@ import logging
 import subprocess
 from pathlib import Path
 from statistics import mean, median, stdev
+from typing import Literal
 
 from cutai.config import ensure_ffmpeg, ensure_ffprobe
 from cutai.models.types import (
@@ -20,6 +21,9 @@ from cutai.models.types import (
 )
 
 logger = logging.getLogger(__name__)
+
+PacingCurve = Literal["constant", "slow-fast-slow", "fast-slow", "slow-fast", "dynamic"]
+ColorTemperature = Literal["neutral", "warm", "cool"]
 
 # ── Public API ───────────────────────────────────────────────────────────────
 
@@ -97,7 +101,7 @@ def _extract_rhythm(analysis: VideoAnalysis) -> RhythmDNA:
 
 def _classify_pacing(
     durations: list[float],
-) -> str:
+) -> PacingCurve:
     """Classify pacing curve by splitting scenes into three equal segments."""
     n = len(durations)
     if n < 3:
@@ -251,7 +255,7 @@ def _sample_frame_rgb(
 
 def _guess_temperature(
     ffmpeg: str, video_path: str, timestamps: list[float]
-) -> str:
+) -> ColorTemperature:
     """Estimate colour temperature from sampled frames (warm/neutral/cool)."""
     warm_score = 0
     cool_score = 0

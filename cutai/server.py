@@ -15,7 +15,7 @@ import uuid
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -294,7 +294,7 @@ async def get_video_analysis(video_id: str) -> dict:
     info = _get_video_or_404(video_id)
     if "analysis" not in info:
         raise HTTPException(status_code=404, detail="Analysis not ready")
-    return info["analysis"]
+    return cast(dict[Any, Any], info["analysis"])
 
 
 @app.delete("/api/videos/{video_id}")

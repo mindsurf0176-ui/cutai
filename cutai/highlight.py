@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from cutai.models.types import CutOperation, EditPlan
+from cutai.models.types import CutOperation, EditOperation, EditPlan
 
 if TYPE_CHECKING:
     from cutai.models.types import EngagementReport, SceneInfo, VideoAnalysis
@@ -76,7 +76,7 @@ def generate_highlights(
         kept = _strategy_best_moments(eligible, score_map, target_duration)
 
     # Build CutOperations (keep)
-    operations: list[CutOperation] = []
+    operations: list[EditOperation] = []
     for scene in kept:
         operations.append(CutOperation(
             action="keep",
