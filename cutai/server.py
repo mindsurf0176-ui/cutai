@@ -13,8 +13,9 @@ import shutil
 import subprocess
 import tempfile
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, File, UploadFile, WebSocket, HTTPException, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,6 +34,43 @@ app.add_middleware(
 )
 
 logger = logging.getLogger(__name__)
+
+RenderPresetName = Literal["draft", "balanced", "high"]
+SubtitleExportMode = Literal["burned", "sidecar"]
+
+
+@dataclass(frozen=True)
+class RenderPresetSpec:
+    key: RenderPresetName
+    label: str
+    max_height: int | None
+    ffmpeg_preset: str
+    crf: int
+
+
+RENDER_PRESETS: dict[RenderPresetName, RenderPresetSpec] = {
+    "draft": RenderPresetSpec(
+        key="draft",
+        label="Draft",
+        max_height=720,
+        ffmpeg_preset="veryfast",
+        crf=30,
+    ),
+    "balanced": RenderPresetSpec(
+        key="balanced",
+        label="Balanced",
+        max_height=1080,
+        ffmpeg_preset="medium",
+        crf=23,
+    ),
+    "high": RenderPresetSpec(
+        key="high",
+        label="High",
+        max_height=None,
+        ffmpeg_preset="slow",
+        crf=19,
+    ),
+}
 
 # ── Storage ──────────────────────────────────────────────────────────────────
 
@@ -58,13 +96,23 @@ class PlanRequest(BaseModel):
     use_llm: bool = True
     llm_model: str = "gpt-4o"
     style_path: str | None = None
+    style_preset: str | None = None
 
 
 class RenderRequest(BaseModel):
     video_id: str
     plan: dict  # EditPlan as dict
-    burn_subtitles: bool = True
+    render_preset: RenderPresetName = "balanced"
+    subtitle_export_mode: SubtitleExportMode = "burned"
+    burn_subtitles: bool | None = None
     bgm_file: str | None = None
+    output_path: str | None = None
+
+
+class PreviewRequest(BaseModel):
+    video_id: str
+    plan: dict  # EditPlan as dict
+    resolution: int = 360
     output_path: str | None = None
 
 
@@ -86,6 +134,7 @@ class StyleExtractRequest(BaseModel):
 
 class JobResponse(BaseModel):
     job_id: str
+    type: str
     status: str  # pending, running, completed, failed
     progress: float = 0.0  # 0-100
     result: dict | None = None
@@ -112,10 +161,16 @@ def _get_video_or_404(video_id: str) -> dict[str, Any]:
     return videos[video_id]
 
 
-def _create_job() -> str:
+def _create_job(job_type: str) -> str:
     """Create a new job entry and return its ID."""
     job_id = str(uuid.uuid4())
-    jobs[job_id] = {"status": "pending", "result": None, "error": None, "progress": 0.0}
+    jobs[job_id] = {
+        "type": job_type,
+        "status": "pending",
+        "result": None,
+        "error": None,
+        "progress": 0.0,
+    }
     return job_id
 
 
@@ -126,11 +181,69 @@ def _get_job_response(job_id: str) -> JobResponse:
     j = jobs[job_id]
     return JobResponse(
         job_id=job_id,
+        type=j.get("type", "unknown"),
         status=j["status"],
         progress=j.get("progress", 0.0),
         result=j.get("result"),
         error=j.get("error"),
     )
+
+
+def _build_output_path(original_name: str, suffix: str) -> str:
+    stem = Path(original_name or "output.mp4").stem
+    return str(OUTPUT_DIR / f"{stem}_{suffix}_{uuid.uuid4().hex[:8]}.mp4")
+
+
+def _resolve_style_source(
+    *,
+    style_path: str | None = None,
+    style_preset: str | None = None,
+) -> str | None:
+    if style_path:
+        return style_path
+
+    if not style_preset:
+        return None
+
+    presets_dir = Path(__file__).parent / "style" / "presets"
+    candidates = [
+        presets_dir / style_preset,
+        presets_dir / f"{style_preset}.yaml",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate)
+
+    raise HTTPException(status_code=404, detail=f"Preset not found: {style_preset}")
+
+
+def _resolve_subtitle_export_mode(req: RenderRequest) -> SubtitleExportMode:
+    if "subtitle_export_mode" in req.model_fields_set:
+        return req.subtitle_export_mode
+
+    if "burn_subtitles" in req.model_fields_set:
+        return "burned" if req.burn_subtitles is not False else "sidecar"
+
+    return "burned"
+
+
+def _get_completed_media_job(job_id: str, expected_type: str) -> tuple[JobResponse, str]:
+    jr = _get_job_response(job_id)
+    if jr.type != expected_type:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Job {job_id} is type={jr.type}, expected {expected_type}",
+        )
+    if jr.status != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Job is not completed (status={jr.status})",
+        )
+
+    output_path = jr.result.get("output_path") if jr.result else None
+    if not output_path or not Path(output_path).exists():
+        raise HTTPException(status_code=404, detail="Output file not found")
+    return jr, output_path
 
 
 # ── 1. Video Management ─────────────────────────────────────────────────────
@@ -157,6 +270,7 @@ async def upload_video(file: UploadFile = File(...)) -> dict:
     videos[video_id] = {
         "path": str(dest),
         "original_name": file.filename,
+        "file_size": dest.stat().st_size,
         "duration": meta.get("duration", 0.0),
         "width": meta.get("width", 0),
         "height": meta.get("height", 0),
@@ -222,7 +336,7 @@ async def start_analysis(video_id: str, req: AnalyzeRequest | None = None) -> di
     if req is None:
         req = AnalyzeRequest()
 
-    job_id = _create_job()
+    job_id = _create_job("analysis")
     asyncio.create_task(
         _run_analysis(job_id, video_id, info["path"], req.whisper_model, req.skip_transcription)
     )
@@ -352,11 +466,13 @@ async def generate_plan(req: PlanRequest) -> dict:
 
     analysis = VideoAnalysis(**analysis_data)
 
-    if req.style_path:
+    style_source = _resolve_style_source(style_path=req.style_path, style_preset=req.style_preset)
+
+    if style_source:
         # Style-based planning
         from cutai.style import apply_style, load_style
 
-        style_dna = await asyncio.to_thread(load_style, req.style_path)
+        style_dna = await asyncio.to_thread(load_style, style_source)
         edit_plan = await asyncio.to_thread(
             apply_style, analysis, style_dna, instruction=req.instruction
         )
@@ -393,10 +509,9 @@ async def start_render(req: RenderRequest) -> dict:
     # Determine output path
     output_path = req.output_path
     if not output_path:
-        original_name = Path(info.get("original_name", "output.mp4")).stem
-        output_path = str(OUTPUT_DIR / f"{original_name}_{uuid.uuid4().hex[:8]}.mp4")
+        output_path = _build_output_path(info.get("original_name", "output.mp4"), "render")
 
-    job_id = _create_job()
+    job_id = _create_job("render")
     asyncio.create_task(
         _run_render(
             job_id,
@@ -404,7 +519,8 @@ async def start_render(req: RenderRequest) -> dict:
             analysis_data,
             req.plan,
             output_path,
-            req.burn_subtitles,
+            req.render_preset,
+            _resolve_subtitle_export_mode(req),
             req.bgm_file,
         )
     )
@@ -414,16 +530,59 @@ async def start_render(req: RenderRequest) -> dict:
 @app.get("/api/render/{job_id}/download")
 async def download_render(job_id: str) -> FileResponse:
     """Download the rendered video for a completed render job."""
-    jr = _get_job_response(job_id)
-    if jr.status != "completed":
+    _, output_path = _get_completed_media_job(job_id, "render")
+    return FileResponse(output_path, media_type="video/mp4", filename=Path(output_path).name)
+
+
+@app.get("/api/render/{job_id}/video")
+async def get_render_video(job_id: str) -> FileResponse:
+    """Serve the rendered video for in-app playback."""
+    _, output_path = _get_completed_media_job(job_id, "render")
+    return FileResponse(output_path, media_type="video/mp4")
+
+
+@app.post("/api/preview")
+async def start_preview(req: PreviewRequest) -> dict:
+    """Start preview rendering as a background task. Returns job_id."""
+    info = _get_video_or_404(req.video_id)
+
+    analysis_data = info.get("analysis")
+    if not analysis_data:
         raise HTTPException(
             status_code=400,
-            detail=f"Job is not completed (status={jr.status})",
+            detail="Video must be analyzed first. POST /api/videos/{video_id}/analyze",
         )
-    output_path = jr.result.get("output_path") if jr.result else None
-    if not output_path or not Path(output_path).exists():
-        raise HTTPException(status_code=404, detail="Rendered file not found")
+
+    output_path = req.output_path
+    if not output_path:
+        output_path = _build_output_path(info.get("original_name", "preview.mp4"), "preview")
+
+    job_id = _create_job("preview")
+    asyncio.create_task(
+        _run_preview(
+            job_id,
+            info["path"],
+            analysis_data,
+            req.plan,
+            output_path,
+            req.resolution,
+        )
+    )
+    return {"job_id": job_id, "status": "pending"}
+
+
+@app.get("/api/preview/{job_id}/download")
+async def download_preview(job_id: str) -> FileResponse:
+    """Download the preview video for a completed preview job."""
+    _, output_path = _get_completed_media_job(job_id, "preview")
     return FileResponse(output_path, media_type="video/mp4", filename=Path(output_path).name)
+
+
+@app.get("/api/preview/{job_id}/video")
+async def get_preview_video(job_id: str) -> FileResponse:
+    """Serve the preview video for in-app playback."""
+    _, output_path = _get_completed_media_job(job_id, "preview")
+    return FileResponse(output_path, media_type="video/mp4")
 
 
 async def _run_render(
@@ -432,7 +591,8 @@ async def _run_render(
     analysis_data: dict,
     plan_data: dict,
     output_path: str,
-    burn_subtitles: bool,
+    render_preset: RenderPresetName,
+    subtitle_export_mode: SubtitleExportMode,
     bgm_file: str | None,
 ) -> None:
     """Background task for video rendering — step-by-step with progress updates."""
@@ -455,6 +615,9 @@ async def _run_render(
 
         analysis = VideoAnalysis(**analysis_data)
         edit_plan = EditPlan(**plan_data)
+        preset_spec = RENDER_PRESETS[render_preset]
+        burn_subtitles = subtitle_export_mode == "burned"
+        subtitle_result: dict[str, Any] = {}
 
         # Ensure output directory exists
         _Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -551,9 +714,12 @@ async def _run_render(
                     current_video = await asyncio.to_thread(
                         _burn_subs, current_video, ass_path, sub_output,
                     )
+                    subtitle_result["subtitle_export_mode"] = "burned"
                 else:
                     sidecar_path = str(_Path(output_path).with_suffix(".ass"))
                     await asyncio.to_thread(generate_ass, transcript, sidecar_path, sub_op)
+                    subtitle_result["subtitle_export_mode"] = "sidecar"
+                    subtitle_result["subtitle_path"] = sidecar_path
 
                 current_progress += progress_per_step
                 jobs[job_id]["progress"] = round(current_progress, 1)
@@ -573,10 +739,14 @@ async def _run_render(
 
             # Final: copy to output
             jobs[job_id]["progress"] = 95.0
-            if current_video != output_path:
-                import shutil as _shutil
-
-                await asyncio.to_thread(_shutil.copy2, current_video, output_path)
+            actual_height = _resolve_render_height(analysis.height, preset_spec.max_height)
+            await asyncio.to_thread(
+                _export_render_with_settings,
+                current_video,
+                output_path,
+                preset_spec,
+                analysis.height,
+            )
 
         finally:
             # Clean up temp directory
@@ -586,9 +756,57 @@ async def _run_render(
 
         jobs[job_id]["status"] = "completed"
         jobs[job_id]["progress"] = 100.0
-        jobs[job_id]["result"] = {"output_path": output_path}
+        jobs[job_id]["result"] = {
+            "output_path": output_path,
+            "resolution": actual_height,
+            "render_preset": render_preset,
+            **subtitle_result,
+        }
     except Exception as e:
         logger.exception("Render failed for job %s", job_id)
+        jobs[job_id]["status"] = "failed"
+        jobs[job_id]["error"] = str(e)
+
+
+async def _run_preview(
+    job_id: str,
+    video_path: str,
+    analysis_data: dict,
+    plan_data: dict,
+    output_path: str,
+    resolution: int,
+) -> None:
+    """Background task for preview rendering."""
+    jobs[job_id]["status"] = "running"
+    jobs[job_id]["progress"] = 10.0
+    try:
+        from pathlib import Path as _Path
+
+        from cutai.models.types import EditPlan, VideoAnalysis
+        from cutai.preview import render_preview
+
+        analysis = VideoAnalysis(**analysis_data)
+        edit_plan = EditPlan(**plan_data)
+
+        _Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        jobs[job_id]["progress"] = 35.0
+        result_path = await asyncio.to_thread(
+            render_preview,
+            video_path,
+            edit_plan,
+            analysis,
+            output_path,
+            resolution,
+        )
+        jobs[job_id]["progress"] = 95.0
+        jobs[job_id]["status"] = "completed"
+        jobs[job_id]["progress"] = 100.0
+        jobs[job_id]["result"] = {
+            "output_path": result_path,
+            "resolution": resolution,
+        }
+    except Exception as e:
+        logger.exception("Preview failed for job %s", job_id)
         jobs[job_id]["status"] = "failed"
         jobs[job_id]["error"] = str(e)
 
@@ -640,7 +858,7 @@ async def get_preset(name: str) -> dict:
 async def extract_style_endpoint(req: StyleExtractRequest) -> dict:
     """Extract editing style (Edit DNA) from a video. Returns job_id."""
     info = _get_video_or_404(req.video_id)
-    job_id = _create_job()
+    job_id = _create_job("style_extract")
     asyncio.create_task(_run_style_extract(job_id, info["path"]))
     return {"job_id": job_id, "status": "pending"}
 
@@ -693,7 +911,7 @@ async def apply_style_endpoint(req: StyleApplyRequest) -> dict:
 async def compute_engagement(video_id: str) -> dict:
     """Compute engagement scores. Returns job_id."""
     info = _get_video_or_404(video_id)
-    job_id = _create_job()
+    job_id = _create_job("engagement")
     asyncio.create_task(_run_engagement(job_id, video_id, info["path"]))
     return {"job_id": job_id, "status": "pending"}
 
@@ -735,7 +953,7 @@ async def generate_highlights(req: HighlightRequest) -> dict:
             detail="Video must be analyzed first. POST /api/videos/{video_id}/analyze",
         )
 
-    job_id = _create_job()
+    job_id = _create_job("highlights")
     asyncio.create_task(
         _run_highlights(job_id, req.video_id, info["path"], analysis_data, req)
     )
@@ -814,6 +1032,7 @@ async def ws_progress(websocket: WebSocket, job_id: str) -> None:
             if current_progress != prev_progress or current_status != prev_status:
                 msg: dict[str, Any] = {
                     "job_id": job_id,
+                    "type": j.get("type", "unknown"),
                     "status": current_status,
                     "progress": current_progress,
                 }
@@ -931,3 +1150,67 @@ def _extract_thumbnail(video_path: str, output_path: str, time: float) -> None:
         output_path,
     ]
     subprocess.run(cmd, capture_output=True, check=True, timeout=30)
+
+
+def _resolve_render_height(input_height: int, max_height: int | None) -> int:
+    """Return the expected output height without upscaling."""
+    if input_height <= 0:
+        return max_height or 0
+    if max_height is None:
+        return input_height
+    return min(input_height, max_height)
+
+
+def _export_render_with_settings(
+    input_path: str,
+    output_path: str,
+    preset: RenderPresetSpec,
+    input_height: int,
+) -> None:
+    """Apply the selected render preset during final export."""
+    from cutai.config import ensure_ffmpeg
+
+    ffmpeg = ensure_ffmpeg()
+    target_height = _resolve_render_height(input_height, preset.max_height)
+
+    cmd = [
+        ffmpeg,
+        "-y",
+        "-i",
+        input_path,
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a?",
+    ]
+
+    if preset.max_height is not None and input_height > preset.max_height:
+        cmd.extend(["-vf", f"scale=-2:{target_height}"])
+
+    cmd.extend(
+        [
+            "-c:v",
+            "libx264",
+            "-preset",
+            preset.ffmpeg_preset,
+            "-crf",
+            str(preset.crf),
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            output_path,
+        ]
+    )
+
+    try:
+        subprocess.run(cmd, capture_output=True, check=True, timeout=1800)
+    except subprocess.CalledProcessError as exc:
+        stderr = exc.stderr.decode(errors="ignore")[-500:] if exc.stderr else ""
+        raise RuntimeError(
+            f"FFmpeg export failed for render preset '{preset.key}': {stderr or exc}"
+        ) from exc
