@@ -1,7 +1,25 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { VideoInfo, VideoAnalysis, EditPlan, Job, Preset } from './types';
+import { openPath, openUrl } from '@tauri-apps/plugin-opener';
+import type {
+  VideoInfo,
+  VideoAnalysis,
+  EditPlan,
+  Job,
+  Preset,
+  PreviewResolution,
+  RenderPreset,
+  SubtitleExportMode,
+} from './types';
 
 const API_BASE = 'http://127.0.0.1:18910';
+const DEFAULT_EXPORT_BASENAME = 'cutai-video';
+
+interface CreatePlanOptions {
+  useLlm?: boolean;
+  stylePreset?: string | null;
+}
+
+export type MediaAssetKind = 'preview' | 'render';
 
 interface BackendStartResponse {
   started: boolean;
@@ -40,6 +58,77 @@ export function canAutoStartBackend(): boolean {
     | undefined;
 
   return Boolean(runtimeWindow?.__TAURI_INTERNALS__);
+}
+
+export function isNativeDesktop(): boolean {
+  return canAutoStartBackend();
+}
+
+function getPathExtension(path: string): string {
+  const cleanPath = path.split(/[?#]/, 1)[0] ?? '';
+  const lastSegment = cleanPath.split(/[\\/]/).pop() ?? '';
+  const extension = lastSegment.match(/(\.[A-Za-z0-9]+)$/)?.[1];
+  return extension ? extension.toLowerCase() : '.mp4';
+}
+
+function getBaseNameWithoutExtension(name: string | null | undefined): string {
+  const trimmed = name?.trim() ?? '';
+  if (!trimmed) return DEFAULT_EXPORT_BASENAME;
+
+  const fileName = trimmed.split(/[\\/]/).pop() ?? trimmed;
+  const withoutExtension = fileName.replace(/\.[^.]+$/, '').trim();
+  const sanitized = withoutExtension
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  return sanitized || DEFAULT_EXPORT_BASENAME;
+}
+
+export function getSuggestedExportFilename(
+  originalName: string | null | undefined,
+  kind: MediaAssetKind,
+  outputPath: string,
+  resolution?: number
+): string {
+  const baseName = getBaseNameWithoutExtension(originalName);
+  const suffix = kind === 'preview'
+    ? resolution
+      ? `-preview-${resolution}p`
+      : '-preview'
+    : '-render';
+
+  return `${baseName}${suffix}${getPathExtension(outputPath)}`;
+}
+
+export async function openNativePath(target: string): Promise<void> {
+  if (!target) return;
+
+  if (/^https?:\/\//.test(target)) {
+    await openUrl(target);
+    return;
+  }
+
+  await openPath(target);
+}
+
+export async function revealNativePath(target: string): Promise<void> {
+  if (!target) return;
+
+  await invoke('reveal_path', { path: target });
+}
+
+export async function exportNativePath(
+  sourcePath: string,
+  defaultFileName: string
+): Promise<string | null> {
+  if (!sourcePath) return null;
+
+  return invoke<string | null>('save_exported_file', {
+    sourcePath,
+    defaultFileName,
+  });
 }
 
 export async function startBackend(): Promise<BackendStartResponse> {
@@ -107,24 +196,49 @@ export async function pollJob(jobId: string): Promise<Job> {
 export async function createPlan(
   videoId: string,
   instruction: string,
-  useLlm: boolean = true
+  options: CreatePlanOptions = {}
 ): Promise<EditPlan> {
+  const { useLlm = true, stylePreset = null } = options;
+
   return request<EditPlan>('/api/plan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ video_id: videoId, instruction, use_llm: useLlm }),
+    body: JSON.stringify({
+      video_id: videoId,
+      instruction,
+      use_llm: useLlm,
+      style_preset: stylePreset,
+    }),
   });
 }
 
 export async function startRender(
   videoId: string,
   plan: EditPlan,
-  burnSubtitles: boolean = true
+  renderPreset: RenderPreset = 'balanced',
+  subtitleExportMode: SubtitleExportMode = 'burned'
 ): Promise<{ job_id: string }> {
   return request<{ job_id: string }>('/api/render', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ video_id: videoId, plan, burn_subtitles: burnSubtitles }),
+    body: JSON.stringify({
+      video_id: videoId,
+      plan,
+      render_preset: renderPreset,
+      subtitle_export_mode: subtitleExportMode,
+    }),
+  });
+}
+
+export async function startPreview(
+  videoId: string,
+  plan: EditPlan,
+  resolution: PreviewResolution = 360
+): Promise<{ job_id: string }> {
+  return request<{ job_id: string }>('/api/preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ video_id: videoId, plan, resolution }),
   });
 }
 
@@ -132,15 +246,67 @@ export function getDownloadUrl(jobId: string): string {
   return `${API_BASE}/api/render/${jobId}/download`;
 }
 
+export function getRenderVideoUrl(jobId: string): string {
+  return `${API_BASE}/api/render/${jobId}/video`;
+}
+
+export function getPreviewDownloadUrl(jobId: string): string {
+  return `${API_BASE}/api/preview/${jobId}/download`;
+}
+
+export function getPreviewVideoUrl(jobId: string): string {
+  return `${API_BASE}/api/preview/${jobId}/video`;
+}
+
+export async function openPathOrUrl(target: string, fallbackUrl?: string): Promise<void> {
+  if (!target) return;
+
+  if (isNativeDesktop()) {
+    await openNativePath(target);
+    return;
+  }
+
+  window.open(fallbackUrl ?? target, '_blank', 'noopener,noreferrer');
+}
+
+export async function revealPathOrUrl(target: string, fallbackUrl?: string): Promise<void> {
+  if (!target) return;
+
+  if (isNativeDesktop()) {
+    await revealNativePath(target);
+    return;
+  }
+
+  window.open(fallbackUrl ?? target, '_blank', 'noopener,noreferrer');
+}
+
+export async function exportPathOrUrl(
+  sourcePath: string,
+  defaultFileName: string,
+  fallbackUrl?: string
+): Promise<string | null | void> {
+  if (!sourcePath) return null;
+
+  if (isNativeDesktop()) {
+    return exportNativePath(sourcePath, defaultFileName);
+  }
+
+  window.open(fallbackUrl ?? sourcePath, '_blank', 'noopener,noreferrer');
+}
+
 export async function getPresets(): Promise<Preset[]> {
   return request<Preset[]>('/api/styles/presets');
 }
 
+export async function getPreset(name: string): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>(`/api/styles/presets/${encodeURIComponent(name)}`);
+}
+
 export async function applyStyle(
   videoId: string,
-  style: string
-): Promise<{ job_id: string }> {
-  return request<{ job_id: string }>('/api/styles/apply', {
+  style: Record<string, unknown>
+): Promise<EditPlan> {
+  return request<EditPlan>('/api/styles/apply', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ video_id: videoId, style }),

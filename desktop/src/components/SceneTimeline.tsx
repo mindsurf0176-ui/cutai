@@ -45,14 +45,13 @@ export default function SceneTimeline() {
               onClick={() => dispatch({ type: 'SET_CURRENT_TIME', time: scene.start_time })}
               title={`Scene ${scene.id}: ${formatTime(scene.start_time)} - ${formatTime(scene.end_time)}`}
             >
-              {/* Tooltip */}
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10">
                 <div className="bg-[var(--bg-primary)] border border-[var(--bg-tertiary)] rounded px-2 py-1 text-xs whitespace-nowrap text-[var(--text-primary)]">
                   <span className="font-medium">Scene {scene.id}</span>
                   <br />
                   {formatTime(scene.start_time)} – {formatTime(scene.end_time)}
                   {scene.is_silent && <span className="ml-1 text-xs text-[var(--text-secondary)]">silent</span>}
-                  {scene.has_speech && <span className="ml-1 text-[var(--text-secondary)]">🗣️</span>}
+                  {scene.has_speech && <span className="ml-1 text-[var(--text-secondary)]">speech</span>}
                 </div>
               </div>
             </button>
