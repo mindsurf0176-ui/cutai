@@ -3,9 +3,12 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DESKTOP_DIR="$ROOT_DIR/desktop"
-BUNDLE_DIR="$DESKTOP_DIR/src-tauri/target/release/bundle"
-APP_PATH="${APP_PATH:-$BUNDLE_DIR/macos/CutAI.app}"
-DMG_PATH="${DMG_PATH:-$(compgen -G "$BUNDLE_DIR/dmg/CutAI_*.dmg" | head -n 1 || true)}"
+source "$DESKTOP_DIR/scripts/release-artifact-paths.sh"
+
+BUNDLE_DIR="$(cutai_release_bundle_dir "$ROOT_DIR")"
+SOURCE_APP_PATH="${APP_PATH:-$(cutai_release_app_path "$ROOT_DIR")}"
+SOURCE_DMG_PATH="${DMG_PATH:-$(cutai_release_dmg_path "$ROOT_DIR")}"
+RELEASE_STAGE_DIR="${CUTAI_RELEASE_STAGE_DIR:-}"
 APPLE_IDENTITY="${APPLE_IDENTITY:-}"
 APPLE_TEAM_ID="${APPLE_TEAM_ID:-}"
 APPLE_NOTARY_PROFILE="${APPLE_NOTARY_PROFILE:-}"
@@ -33,9 +36,10 @@ run() {
 
 need codesign
 need xcrun
+need xattr
 
-[[ -d "$APP_PATH" ]] || { echo "App bundle not found: $APP_PATH" >&2; exit 1; }
-[[ -n "$DMG_PATH" && -f "$DMG_PATH" ]] || { echo "DMG not found under $BUNDLE_DIR/dmg" >&2; exit 1; }
+[[ -d "$SOURCE_APP_PATH" ]] || { echo "App bundle not found: $SOURCE_APP_PATH" >&2; exit 1; }
+[[ -n "$SOURCE_DMG_PATH" && -f "$SOURCE_DMG_PATH" ]] || { echo "DMG not found under $BUNDLE_DIR/dmg" >&2; exit 1; }
 
 if [[ -z "$APPLE_IDENTITY" ]]; then
   echo "Set APPLE_IDENTITY to your Developer ID Application/Common Name." >&2
@@ -46,6 +50,21 @@ if [[ "$SKIP_NOTARY" != "1" && -z "$APPLE_NOTARY_PROFILE" ]]; then
   echo "Set APPLE_NOTARY_PROFILE to a notarytool keychain profile, or set SKIP_NOTARY=1." >&2
   exit 1
 fi
+
+STAGE_DIR="$(cutai_prepare_stage_dir "$RELEASE_STAGE_DIR")"
+APP_PATH="$STAGE_DIR/$(basename "$SOURCE_APP_PATH")"
+DMG_PATH="$STAGE_DIR/$(basename "$SOURCE_DMG_PATH")"
+
+log "Staging release artifacts"
+log "Source app: $SOURCE_APP_PATH"
+log "Source DMG: $SOURCE_DMG_PATH"
+log "Stage dir: $STAGE_DIR"
+cutai_stage_artifact "$SOURCE_APP_PATH" "$APP_PATH"
+cutai_stage_artifact "$SOURCE_DMG_PATH" "$DMG_PATH"
+
+log "Clearing extended attributes from release artifacts before signing"
+run xattr -cr "$APP_PATH"
+run xattr -cr "$DMG_PATH"
 
 log "Signing app bundle with hardened runtime"
 run codesign --force --deep --options runtime --timestamp --sign "$APPLE_IDENTITY" "$APP_PATH"
@@ -59,6 +78,8 @@ fi
 run codesign --verify --verbose=2 "$DMG_PATH"
 
 if [[ "$SKIP_NOTARY" == "1" ]]; then
+  log "Signed app: $APP_PATH"
+  log "Signed DMG: $DMG_PATH"
   log "Skipping notarization because SKIP_NOTARY=1"
   exit 0
 fi
@@ -71,6 +92,8 @@ run xcrun stapler staple "$APP_PATH"
 run xcrun stapler staple "$DMG_PATH"
 
 log "Notarization flow complete"
+log "Signed app: $APP_PATH"
+log "Signed DMG: $DMG_PATH"
 if [[ -n "$APPLE_TEAM_ID" ]]; then
   log "Expected team id: $APPLE_TEAM_ID"
 fi

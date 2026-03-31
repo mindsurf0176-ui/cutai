@@ -115,6 +115,7 @@ Use the dedicated release guide and helper scripts in this folder:
 - `pnpm release:macos:verify`
 
 The repo now includes reproducible helper scripts for app signing, DMG signing, notarization, stapling, and Gatekeeper-oriented verification. Apple credentials/certificates are still required for the actual trust-bearing steps.
+The release helpers also clean stale bundle outputs before a fresh build, pick the newest DMG deterministically, and stage artifacts into a local temp directory before signing/verification so synced-workspace metadata does not poison codesign checks.
 
 ## Manual QA
 

@@ -83,6 +83,7 @@ Pass notes:
 - [ ] `pnpm tauri build` succeeds on the release machine
 - [ ] Built app launches locally
 - [ ] Built app can still reach or launch the backend
+- [ ] `./scripts/verify-macos-release.sh` is run against the fresh build artifact set, not stale duplicate DMGs from older runs
 
 Pass notes:
 

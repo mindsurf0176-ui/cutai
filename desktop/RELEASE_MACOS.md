@@ -18,15 +18,16 @@ What already existed before this pass:
 
 - `pnpm tauri build` already produces a `.app` and `.dmg`
 - the generated DMG build script supports DMG signing/notarization hooks internally
-- the current built app on this machine was only **ad-hoc signed**
-- the current built DMG on this machine was **unsigned**
+- local release artifacts may exist from prior runs, so the release flow must not trust stale `.app` / `.dmg` outputs blindly
 
 What was missing and is now covered in-repo:
 
 - a reproducible build script for the macOS release bundle
+- deterministic selection of the newest DMG artifact instead of whichever matching file happened to be found first
 - a reproducible bundled-backend build step plus explicit release-readiness metadata so non-portable bundles do not silently pass as redistributable
 - a dedicated signing + notarization helper
 - a dedicated verification helper for codesign / Gatekeeper / stapler checks
+- staging of release artifacts into a local temp directory before signing/verification so File Provider / iCloud metadata does not invalidate codesign checks
 - one place documenting the exact release order and required env vars
 
 ## Required Apple-side setup
@@ -66,6 +67,7 @@ cd desktop
 ```
 
 This runs `pnpm tauri build` and prints the app/DMG paths plus current signature state.
+It removes any previous `desktop/src-tauri/target/release/bundle` output first so verification later is not confused by stale duplicate DMGs.
 It also creates `desktop/src-tauri/gen/backend`, installs the CutAI backend into an isolated runtime there, bundles that runtime into the macOS app resources, and records whether the resulting backend bundle is actually safe to ship.
 
 Important: the current backend runtime is still produced with `python -m venv --copies`, so release mode intentionally treats it as non-portable. A normal release build will fail until CutAI has a genuinely portable backend runtime.
@@ -95,6 +97,8 @@ APPLE_TEAM_ID="$APPLE_TEAM_ID" \
 APPLE_NOTARY_PROFILE="$APPLE_NOTARY_PROFILE" \
 ./scripts/notarize-macos-release.sh
 ```
+
+The signing helper stages the built `.app` and `.dmg` into a local temp directory, then clears extended attributes before signing so `codesign --verify --deep --strict` is not tripped by Finder/iCloud metadata from synced workspaces.
 
 Useful modes:
 

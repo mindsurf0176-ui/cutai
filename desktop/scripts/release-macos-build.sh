@@ -3,9 +3,10 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DESKTOP_DIR="$ROOT_DIR/desktop"
-BUNDLE_DIR="$DESKTOP_DIR/src-tauri/target/release/bundle"
-APP_PATH="$BUNDLE_DIR/macos/CutAI.app"
-DMG_GLOB="$BUNDLE_DIR/dmg/CutAI_*.dmg"
+source "$DESKTOP_DIR/scripts/release-artifact-paths.sh"
+
+BUNDLE_DIR="$(cutai_release_bundle_dir "$ROOT_DIR")"
+APP_PATH="$(cutai_release_app_path "$ROOT_DIR")"
 
 log() {
   printf '[release-build] %s\n' "$*"
@@ -28,6 +29,11 @@ cd "$DESKTOP_DIR"
 log "Installing frontend dependencies if needed"
 pnpm install --frozen-lockfile
 
+if [[ -d "$BUNDLE_DIR" ]]; then
+  log "Removing previous release bundle artifacts"
+  rm -rf "$BUNDLE_DIR"
+fi
+
 log "Building Tauri desktop release bundle"
 pnpm tauri build "$@"
 
@@ -36,7 +42,7 @@ if [[ ! -d "$APP_PATH" ]]; then
   exit 1
 fi
 
-DMG_PATH="$(compgen -G "$DMG_GLOB" | head -n 1 || true)"
+DMG_PATH="$(cutai_release_dmg_path "$ROOT_DIR")"
 
 log "Release bundle ready"
 log "App: $APP_PATH"
