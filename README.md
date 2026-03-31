@@ -131,7 +131,16 @@ A Tauri desktop app lives in [`desktop/`](./desktop) and is aimed at the practic
 - upload a clip
 - analyze it
 - inspect the generated edit plan
+- choose a style preset as planning context for the next plan/refinement
+- optionally use `Apply now` to turn a preset into an immediate starting plan
 - render locally
+
+The current style-aware planning bridge is intentionally explicit:
+
+- selecting a style preset in the desktop UI adds planning context for the next plan request
+- `Apply now` is a separate action that generates a plan immediately
+- refinement prompts keep using the selected preset as context until you clear it
+- the app still runs through the same local backend on your machine; it is not pretending there is a hidden cloud editing step
 
 ### Desktop development
 

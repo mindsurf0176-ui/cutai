@@ -11,10 +11,13 @@ Today the desktop app is focused on the practical MVP flow:
 - upload a video from the UI
 - run analysis and generate an edit plan
 - review detected scenes and planned operations
+- choose a style preset as planning context before creating or refining a plan
+- optionally use `Apply now` when you want the preset to generate a plan immediately
 - render the final video locally
 - surface backend/offline errors and allow retry
 
 This is intentionally **local-first**. The app talks to a backend on `127.0.0.1:18910` and does not require a cloud upload pipeline.
+The product is also intentionally honest about the bridge here: selecting a preset for planning does not silently apply edits. It only adds context to the next plan/refinement request until you clear it, while `Apply now` remains a separate explicit action.
 
 ## Status
 
@@ -27,6 +30,8 @@ Recent validation confirmed:
 - render works on the happy path
 - subtitles are burned in by default in the current pipeline
 - warm/cinematic-style grading is available through the edit pipeline
+- style presets can be kept as planning context separately from immediate `Apply now`
+- refinement prompts reuse the selected planning preset as context
 
 ## Project structure
 
