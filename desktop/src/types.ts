@@ -71,6 +71,12 @@ export const SUBTITLE_EXPORT_MODE_OPTIONS = [
   },
 ] as const;
 export type SubtitleExportMode = (typeof SUBTITLE_EXPORT_MODE_OPTIONS)[number]['value'];
+export type ExportArtifactKind = 'video' | 'subtitle';
+
+export interface ExportArtifact {
+  kind: ExportArtifactKind;
+  path: string;
+}
 
 export type JobType =
   | 'analysis'
@@ -87,6 +93,7 @@ export interface MediaJobResult {
   render_preset?: RenderPreset;
   subtitle_export_mode?: SubtitleExportMode;
   subtitle_path?: string;
+  export_artifacts?: ExportArtifact[];
 }
 
 export type OutputKind = 'preview' | 'render';

@@ -61,6 +61,23 @@ function isValidHistoryItem(value: unknown): value is OutputHistoryItem {
     return false;
   }
 
+  if (item.export_artifacts !== undefined) {
+    if (!Array.isArray(item.export_artifacts)) {
+      return false;
+    }
+
+    for (const artifact of item.export_artifacts) {
+      if (
+        !artifact
+        || typeof artifact !== 'object'
+        || (artifact.kind !== 'video' && artifact.kind !== 'subtitle')
+        || typeof artifact.path !== 'string'
+      ) {
+        return false;
+      }
+    }
+  }
+
   return true;
 }
 

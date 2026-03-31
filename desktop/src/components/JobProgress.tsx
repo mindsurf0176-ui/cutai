@@ -4,7 +4,7 @@ import * as Progress from '@radix-ui/react-progress';
 import { useApp } from '../store';
 import {
   connectProgressWs,
-  exportPathOrUrl,
+  exportBundleOrUrl,
   getAnalysis,
   getDownloadUrl,
   getSuggestedExportFilename,
@@ -59,6 +59,7 @@ function buildRecentOutputItem(
     render_preset: media.render_preset,
     subtitle_export_mode: media.subtitle_export_mode,
     subtitle_path: media.subtitle_path,
+    export_artifacts: media.export_artifacts,
     video_id: videoId,
     original_name: originalName ?? null,
     completed_at: new Date().toISOString(),
@@ -254,7 +255,7 @@ export default function JobProgress() {
       )
     : null;
 
-  async function handleExport(kind: 'preview' | 'render', outputPath: string, fallbackUrl: string) {
+  async function handleExport(kind: 'preview' | 'render', media: MediaJobResult, fallbackUrl: string) {
     if (!activeJob) {
       return;
     }
@@ -262,12 +263,12 @@ export default function JobProgress() {
     const defaultFileName = kind === 'preview'
       ? defaultPreviewFileName ?? 'cutai-video-preview.mp4'
       : defaultRenderFileName ?? 'cutai-video-render.mp4';
-    const savedPath = await exportPathOrUrl(outputPath, defaultFileName, fallbackUrl);
+    const exportResult = await exportBundleOrUrl(media, defaultFileName, fallbackUrl);
 
-    if (nativeDesktop && typeof savedPath === 'string' && savedPath) {
+    if (nativeDesktop && exportResult && typeof exportResult === 'object' && exportResult.savedPrimaryPath) {
       setExportFeedback({
         jobId: activeJob.job_id,
-        savedPath,
+        savedPath: exportResult.savedPrimaryPath,
         assetLabel: kind === 'render' ? 'Render' : 'Preview',
       });
     }
@@ -376,7 +377,7 @@ export default function JobProgress() {
                   onClick={() =>
                     void handleExport(
                       'preview',
-                      previewResultData?.output_path ?? '',
+                      previewResultData!,
                       getPreviewDownloadUrl(activeJob.job_id)
                     )
                   }
@@ -433,7 +434,7 @@ export default function JobProgress() {
                   onClick={() =>
                     void handleExport(
                       'render',
-                      renderResultData?.output_path ?? '',
+                      renderResultData!,
                       getDownloadUrl(activeJob.job_id)
                     )
                   }

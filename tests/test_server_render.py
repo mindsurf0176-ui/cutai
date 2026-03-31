@@ -177,6 +177,99 @@ def test_render_job_persists_sidecar_subtitle_metadata(monkeypatch, sample_analy
     assert job["result"]["subtitle_export_mode"] == "sidecar"
     assert job["result"]["subtitle_path"].endswith(".ass")
     assert Path(job["result"]["subtitle_path"]).read_text() == "sidecar subtitle"
+    assert job["result"]["export_artifacts"] == [
+        {"kind": "video", "path": job["result"]["output_path"]},
+        {"kind": "subtitle", "path": job["result"]["subtitle_path"]},
+    ]
+
+
+def test_render_job_fails_if_sidecar_mode_produces_no_subtitle_artifact(
+    monkeypatch, sample_analysis, tmp_path: Path
+):
+    server.videos.clear()
+    server.jobs.clear()
+    monkeypatch.setattr(server, "OUTPUT_DIR", tmp_path)
+
+    source_path = tmp_path / "input.mp4"
+    source_path.write_bytes(b"source")
+
+    video_id = "video-render-sidecar-missing"
+    server.videos[video_id] = {
+        "path": str(source_path),
+        "original_name": "input.mp4",
+        "file_size": source_path.stat().st_size,
+        "duration": sample_analysis.duration,
+        "width": sample_analysis.width,
+        "height": sample_analysis.height,
+        "fps": sample_analysis.fps,
+        "analysis": sample_analysis.model_dump(),
+    }
+
+    sample_analysis.transcript = [
+        {
+            "start_time": 0.0,
+            "end_time": 1.0,
+            "text": "hello",
+        }
+    ]
+
+    def fake_export_render_with_settings(
+        input_path: str,
+        output_path: str,
+        preset: server.RenderPresetSpec,
+        input_height: int,
+    ) -> None:
+        Path(output_path).write_bytes(f"render-{preset.key}".encode())
+
+    def fake_generate_ass(_transcript, _output_path, _operation) -> None:
+        return None
+
+    monkeypatch.setattr(server, "_export_render_with_settings", fake_export_render_with_settings)
+    scheduled: list[object] = []
+    monkeypatch.setattr(server.asyncio, "create_task", lambda coro: scheduled.append(coro))
+
+    import sys
+    import types
+
+    subtitle_module = types.SimpleNamespace(
+        generate_ass=fake_generate_ass,
+        burn_subtitles=lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setitem(sys.modules, "cutai.editor.subtitle", subtitle_module)
+
+    client = TestClient(server.app)
+    plan = {
+        "instruction": "add subtitles",
+        "operations": [
+            {
+                "type": "subtitle",
+                "position": "bottom",
+                "font_size": 24,
+                "language": "en",
+            }
+        ],
+        "estimated_duration": sample_analysis.duration,
+        "summary": "Add subtitles",
+    }
+
+    start_response = client.post(
+        "/api/render",
+        json={
+            "video_id": video_id,
+            "plan": plan,
+            "render_preset": "balanced",
+            "subtitle_export_mode": "sidecar",
+        },
+    )
+
+    assert start_response.status_code == 200
+    job_id = start_response.json()["job_id"]
+    assert len(scheduled) == 1
+    asyncio.run(scheduled.pop())
+
+    job = _wait_for_job(job_id)
+    assert job["status"] == "failed"
+    assert "subtitle" in job["error"].lower()
 
 
 def test_render_request_accepts_legacy_burn_subtitles_flag(

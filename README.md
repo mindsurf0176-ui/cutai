@@ -141,6 +141,7 @@ The current style-aware planning bridge is intentionally explicit:
 - `Apply now` is a separate action that generates a plan immediately
 - refinement prompts keep using the selected preset as context until you clear it
 - the app still runs through the same local backend on your machine; it is not pretending there is a hidden cloud editing step
+- desktop release packaging now explicitly gates non-portable backend bundles and only becomes self-contained for FFmpeg/FFprobe when those binaries are bundled during the desktop backend step
 
 ### Desktop development
 

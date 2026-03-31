@@ -4,7 +4,9 @@ import { openPath, openUrl } from '@tauri-apps/plugin-opener';
 import type { EditPlan } from './types';
 import {
   createPlan,
+  exportBundleOrUrl,
   exportPathOrUrl,
+  getExportArtifacts,
   getRenderVideoUrl,
   getSuggestedExportFilename,
   isNativeDesktop,
@@ -217,6 +219,47 @@ describe('api', () => {
     });
   });
 
+  it('derives export artifacts from explicit bundle metadata first', () => {
+    expect(getExportArtifacts({
+      output_path: '/tmp/render.mp4',
+      export_artifacts: [
+        { kind: 'video', path: '/tmp/render.mp4' },
+        { kind: 'subtitle', path: '/tmp/render.ass' },
+      ],
+      subtitle_path: '/tmp/ignored.ass',
+    })).toEqual([
+      { kind: 'video', path: '/tmp/render.mp4' },
+      { kind: 'subtitle', path: '/tmp/render.ass' },
+    ]);
+  });
+
+  it('exports a media bundle through the native save bundle command in desktop mode', async () => {
+    (window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {};
+    vi.mocked(invoke).mockResolvedValue({
+      savedPrimaryPath: '/Users/minseo/Exports/clip-render.mp4',
+      savedCompanionPaths: ['/Users/minseo/Exports/clip-render.ass'],
+    });
+
+    await expect(exportBundleOrUrl({
+      output_path: '/tmp/render.mp4',
+      subtitle_export_mode: 'sidecar',
+      subtitle_path: '/tmp/render.ass',
+      export_artifacts: [
+        { kind: 'video', path: '/tmp/render.mp4' },
+        { kind: 'subtitle', path: '/tmp/render.ass' },
+      ],
+    }, 'clip-render.mp4')).resolves.toEqual({
+      savedPrimaryPath: '/Users/minseo/Exports/clip-render.mp4',
+      savedCompanionPaths: ['/Users/minseo/Exports/clip-render.ass'],
+    });
+
+    expect(invoke).toHaveBeenCalledWith('save_export_bundle', {
+      primarySourcePath: '/tmp/render.mp4',
+      companionSourcePaths: ['/tmp/render.ass'],
+      defaultFileName: 'clip-render.mp4',
+    });
+  });
+
   it('falls back to opening the browser target when reveal is not native', async () => {
     const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
 
@@ -246,6 +289,26 @@ describe('api', () => {
 
     await exportPathOrUrl(
       '/tmp/output.mp4',
+      'clip-render.mp4',
+      'http://127.0.0.1:18910/api/render/job/download'
+    );
+
+    expect(windowOpen).toHaveBeenCalledWith(
+      'http://127.0.0.1:18910/api/render/job/download',
+      '_blank',
+      'noopener,noreferrer'
+    );
+  });
+
+  it('falls back to the browser download target when exporting a bundle outside desktop mode', async () => {
+    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    await exportBundleOrUrl(
+      {
+        output_path: '/tmp/render.mp4',
+        subtitle_export_mode: 'sidecar',
+        subtitle_path: '/tmp/render.ass',
+      },
       'clip-render.mp4',
       'http://127.0.0.1:18910/api/render/job/download'
     );

@@ -24,6 +24,7 @@ What already existed before this pass:
 What was missing and is now covered in-repo:
 
 - a reproducible build script for the macOS release bundle
+- a reproducible bundled-backend build step plus explicit release-readiness metadata so non-portable bundles do not silently pass as redistributable
 - a dedicated signing + notarization helper
 - a dedicated verification helper for codesign / Gatekeeper / stapler checks
 - one place documenting the exact release order and required env vars
@@ -65,6 +66,25 @@ cd desktop
 ```
 
 This runs `pnpm tauri build` and prints the app/DMG paths plus current signature state.
+It also creates `desktop/src-tauri/gen/backend`, installs the CutAI backend into an isolated runtime there, bundles that runtime into the macOS app resources, and records whether the resulting backend bundle is actually safe to ship.
+
+Important: the current backend runtime is still produced with `python -m venv --copies`, so release mode intentionally treats it as non-portable. A normal release build will fail until CutAI has a genuinely portable backend runtime.
+
+For local validation only, you can bypass that guard:
+
+```bash
+cd desktop
+CUTAI_DESKTOP_SKIP_BACKEND_BUNDLE_CHECK=1 ./scripts/release-macos-build.sh
+```
+
+If you want the packaged app to carry its own media tools, bundle both binaries during the backend step:
+
+```bash
+cd desktop
+CUTAI_DESKTOP_BUNDLED_FFMPEG_PATH=/absolute/path/to/ffmpeg \
+CUTAI_DESKTOP_BUNDLED_FFPROBE_PATH=/absolute/path/to/ffprobe \
+pnpm backend:bundle
+```
 
 ### 2) Sign + notarize + staple
 
@@ -154,6 +174,7 @@ The repo is now set up for the flow, but this machine still needs:
 - one successful credential-backed notarization run and captured verification output
 
 Without those, we can only get to **release-process ready**, not fully **external-alpha trusted**.
+Without a portable backend runtime, we also cannot honestly call the packaged app self-contained for redistribution.
 
 ## Suggested release evidence to save
 

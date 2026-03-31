@@ -12,7 +12,7 @@ import {
 import * as Slider from '@radix-ui/react-slider';
 import { useApp } from '../store';
 import {
-  exportPathOrUrl,
+  exportBundleOrUrl,
   getDownloadUrl,
   getSuggestedExportFilename,
   getPreviewDownloadUrl,
@@ -303,8 +303,8 @@ export default function VideoPreview() {
       return;
     }
 
-    const savedPath = await exportPathOrUrl(
-      media.output_path,
+    const exportResult = await exportBundleOrUrl(
+      media,
       getSuggestedExportFilename(
         videoInfo.original_name,
         mode,
@@ -314,8 +314,8 @@ export default function VideoPreview() {
       downloadUrl ?? undefined
     );
 
-    if (nativeDesktop && typeof savedPath === 'string' && savedPath) {
-      setExportFeedback({ kind: mode, savedPath });
+    if (nativeDesktop && exportResult && typeof exportResult === 'object' && exportResult.savedPrimaryPath) {
+      setExportFeedback({ kind: mode, savedPath: exportResult.savedPrimaryPath });
     }
   }
 
@@ -335,8 +335,8 @@ export default function VideoPreview() {
 
   async function handleRecentOutputExport(item: OutputHistoryItem) {
     const { downloadUrl } = getRecentOutputUrls(item);
-    const savedPath = await exportPathOrUrl(
-      item.output_path,
+    const exportResult = await exportBundleOrUrl(
+      item,
       getSuggestedExportFilename(
         item.original_name ?? videoInfo?.original_name,
         item.kind,
@@ -346,10 +346,10 @@ export default function VideoPreview() {
       downloadUrl
     );
 
-    if (nativeDesktop && typeof savedPath === 'string' && savedPath) {
+    if (nativeDesktop && exportResult && typeof exportResult === 'object' && exportResult.savedPrimaryPath) {
       setExportFeedback({
         kind: item.kind,
-        savedPath,
+        savedPath: exportResult.savedPrimaryPath,
       });
     }
   }
@@ -478,6 +478,7 @@ export default function VideoPreview() {
           render_preset: item.render_preset,
           subtitle_export_mode: item.subtitle_export_mode,
           subtitle_path: item.subtitle_path,
+          export_artifacts: item.export_artifacts,
         },
       });
       return;
@@ -492,6 +493,7 @@ export default function VideoPreview() {
         render_preset: item.render_preset,
         subtitle_export_mode: item.subtitle_export_mode,
         subtitle_path: item.subtitle_path,
+        export_artifacts: item.export_artifacts,
       },
     });
   }

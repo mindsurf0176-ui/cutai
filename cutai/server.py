@@ -51,6 +51,7 @@ logger = logging.getLogger(__name__)
 
 RenderPresetName = Literal["draft", "balanced", "high"]
 SubtitleExportMode = Literal["burned", "sidecar"]
+ExportArtifactKind = Literal["video", "subtitle"]
 
 
 @dataclass(frozen=True)
@@ -197,6 +198,16 @@ def _get_job_response(job_id: str) -> JobResponse:
 def _build_output_path(original_name: str, suffix: str) -> str:
     stem = Path(original_name or "output.mp4").stem
     return str(OUTPUT_DIR / f"{stem}_{suffix}_{uuid.uuid4().hex[:8]}.mp4")
+
+
+def _build_export_artifacts(
+    output_path: str,
+    subtitle_path: str | None = None,
+) -> list[dict[str, str]]:
+    artifacts = [{"kind": "video", "path": output_path}]
+    if subtitle_path:
+        artifacts.append({"kind": "subtitle", "path": subtitle_path})
+    return artifacts
 
 
 def _resolve_style_source(
@@ -722,6 +733,10 @@ async def _run_render(
                 else:
                     sidecar_path = str(_Path(output_path).with_suffix(".ass"))
                     await asyncio.to_thread(generate_ass, transcript, sidecar_path, sub_op)
+                    if not _Path(sidecar_path).exists():
+                        raise RuntimeError(
+                            "Sidecar subtitle export requested, but the subtitle file was not generated."
+                        )
                     subtitle_result["subtitle_export_mode"] = "sidecar"
                     subtitle_result["subtitle_path"] = sidecar_path
 
@@ -752,6 +767,11 @@ async def _run_render(
                 analysis.height,
             )
 
+            if subtitle_export_mode == "sidecar" and not subtitle_result.get("subtitle_path"):
+                raise RuntimeError(
+                    "Sidecar subtitle export was requested, but no subtitle sidecar artifact was produced."
+                )
+
         finally:
             # Clean up temp directory
             import shutil as _shutil
@@ -764,6 +784,10 @@ async def _run_render(
             "output_path": output_path,
             "resolution": actual_height,
             "render_preset": render_preset,
+            "export_artifacts": _build_export_artifacts(
+                output_path,
+                cast(str | None, subtitle_result.get("subtitle_path")),
+            ),
             **subtitle_result,
         }
     except Exception as e:
@@ -808,6 +832,7 @@ async def _run_preview(
         jobs[job_id]["result"] = {
             "output_path": result_path,
             "resolution": resolution,
+            "export_artifacts": _build_export_artifacts(result_path),
         }
     except Exception as e:
         logger.exception("Preview failed for job %s", job_id)

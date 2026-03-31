@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "backend:bundle": "./scripts/build-desktop-backend.sh",
     "build": "tsc && vite build",
     "test": "vitest run",
     "preview": "vite preview",

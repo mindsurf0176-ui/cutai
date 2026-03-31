@@ -21,6 +21,7 @@ require_cmd() {
 require_cmd pnpm
 require_cmd cargo
 require_cmd xcrun
+require_cmd python3
 
 cd "$DESKTOP_DIR"
 

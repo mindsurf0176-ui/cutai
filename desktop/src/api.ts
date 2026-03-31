@@ -5,10 +5,12 @@ import type {
   VideoAnalysis,
   EditPlan,
   Job,
+  ExportArtifact,
   Preset,
   PreviewResolution,
   RenderPreset,
   SubtitleExportMode,
+  MediaJobResult,
 } from './types';
 
 const API_BASE = 'http://127.0.0.1:18910';
@@ -25,6 +27,11 @@ interface BackendStartResponse {
   started: boolean;
   already_running: boolean;
   port: number;
+}
+
+interface ExportBundleSaveResult {
+  savedPrimaryPath: string;
+  savedCompanionPaths: string[];
 }
 
 class ApiError extends Error {
@@ -127,6 +134,34 @@ export async function exportNativePath(
 
   return invoke<string | null>('save_exported_file', {
     sourcePath,
+    defaultFileName,
+  });
+}
+
+export function getExportArtifacts(media: MediaJobResult): ExportArtifact[] {
+  if (Array.isArray(media.export_artifacts) && media.export_artifacts.length > 0) {
+    return media.export_artifacts;
+  }
+
+  const artifacts: ExportArtifact[] = [{ kind: 'video', path: media.output_path }];
+  if (media.subtitle_path) {
+    artifacts.push({ kind: 'subtitle', path: media.subtitle_path });
+  }
+  return artifacts;
+}
+
+export async function exportNativeBundle(
+  media: MediaJobResult,
+  defaultFileName: string
+): Promise<ExportBundleSaveResult | null> {
+  const [primaryArtifact, ...companionArtifacts] = getExportArtifacts(media);
+  if (!primaryArtifact?.path) {
+    return null;
+  }
+
+  return invoke<ExportBundleSaveResult | null>('save_export_bundle', {
+    primarySourcePath: primaryArtifact.path,
+    companionSourcePaths: companionArtifacts.map((artifact) => artifact.path),
     defaultFileName,
   });
 }
@@ -292,6 +327,20 @@ export async function exportPathOrUrl(
   }
 
   window.open(fallbackUrl ?? sourcePath, '_blank', 'noopener,noreferrer');
+}
+
+export async function exportBundleOrUrl(
+  media: MediaJobResult,
+  defaultFileName: string,
+  fallbackUrl?: string
+): Promise<ExportBundleSaveResult | null | void> {
+  if (!media.output_path) return null;
+
+  if (isNativeDesktop()) {
+    return exportNativeBundle(media, defaultFileName);
+  }
+
+  window.open(fallbackUrl ?? media.output_path, '_blank', 'noopener,noreferrer');
 }
 
 export async function getPresets(): Promise<Preset[]> {

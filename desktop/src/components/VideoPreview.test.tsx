@@ -264,9 +264,15 @@ describe('VideoPreview mode switching', () => {
   it('renders desktop export actions and passes suggested preview/render filenames', async () => {
     (window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {};
     const exportSpy = vi
-      .spyOn(api, 'exportPathOrUrl')
-      .mockResolvedValueOnce('/Users/minseo/Exports/clip-preview-360p.mp4')
-      .mockResolvedValueOnce('/Users/minseo/Exports/clip-render.mp4');
+      .spyOn(api, 'exportBundleOrUrl')
+      .mockResolvedValueOnce({
+        savedPrimaryPath: '/Users/minseo/Exports/clip-preview-360p.mp4',
+        savedCompanionPaths: [],
+      })
+      .mockResolvedValueOnce({
+        savedPrimaryPath: '/Users/minseo/Exports/clip-render.mp4',
+        savedCompanionPaths: [],
+      });
     const openSpy = vi.spyOn(api, 'openPathOrUrl').mockResolvedValue();
     const revealSpy = vi.spyOn(api, 'revealPathOrUrl').mockResolvedValue();
 
@@ -286,7 +292,7 @@ describe('VideoPreview mode switching', () => {
     });
     expect(exportSpy).toHaveBeenNthCalledWith(
       1,
-      '/tmp/preview.mp4',
+      { output_path: '/tmp/preview.mp4', resolution: 360, job_id: 'preview-job-1' },
       'clip-preview-360p.mp4',
       'http://127.0.0.1:18910/api/preview/preview-job-1/download'
     );
@@ -308,7 +314,12 @@ describe('VideoPreview mode switching', () => {
     });
     expect(exportSpy).toHaveBeenNthCalledWith(
       2,
-      '/tmp/render.mp4',
+      {
+        job_id: 'render-job-1',
+        output_path: '/tmp/render.mp4',
+        resolution: 1080,
+        render_preset: 'balanced',
+      },
       'clip-render.mp4',
       'http://127.0.0.1:18910/api/render/render-job-1/download'
     );
