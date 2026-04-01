@@ -1,15 +1,13 @@
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import {
   Upload,
   Scissors,
   Palette,
   Sparkles,
-  Film,
-  Clock,
-  Maximize,
+  Settings,
+  Clapperboard
 } from 'lucide-react';
 import { useApp, type SidebarTab } from '../store';
+import { Button } from '@/components/ui/button';
 
 const TABS: { id: SidebarTab; label: string; icon: typeof Upload }[] = [
   { id: 'upload', label: 'Upload', icon: Upload },
@@ -18,46 +16,28 @@ const TABS: { id: SidebarTab; label: string; icon: typeof Upload }[] = [
   { id: 'highlights', label: 'Highlights', icon: Sparkles },
 ];
 
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-}
-
 export default function Sidebar() {
   const { state, dispatch } = useApp();
-  const backendLabel =
-    state.backendStatus === 'starting'
-      ? 'starting'
-      : state.backendStatus === 'checking'
-        ? 'checking'
-        : state.backendOnline
-          ? 'online'
-          : 'offline';
-  const backendDotClass =
-    state.backendStatus === 'starting' || state.backendStatus === 'checking'
-      ? 'bg-[var(--warning)]'
-      : state.backendOnline
-        ? 'bg-[var(--success)]'
-        : 'bg-[var(--error)]';
+  const backendLabel = state.backendStatus === 'starting' ? 'starting' : state.backendStatus === 'checking' ? 'checking' : state.backendOnline ? 'online' : 'offline';
+  const backendDotClass = state.backendStatus === 'starting' || state.backendStatus === 'checking' ? 'bg-yellow-500' : state.backendOnline ? 'bg-green-500' : 'bg-red-500';
 
   return (
-    <aside className="flex flex-col w-64 bg-black border-r border-[#27272a]/70 h-full">
-      {/* Tab navigation */}
-      <nav className="flex flex-col gap-1 p-3">
+    <aside className="w-16 flex flex-col items-center bg-card border-r border-border py-5 z-20 flex-shrink-0 shadow-lg">
+      <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-foreground text-background mb-8 shadow-sm">
+        <Clapperboard size={20} />
+      </div>
+
+      <nav className="flex flex-col gap-4 w-full px-2">
         {TABS.map(({ id, label, icon: Icon }) => {
           const isActive = state.sidebarTab === id;
           const isDisabled = id !== 'upload' && !state.videoId;
 
           return (
-            <button
+            <Button
               key={id}
+              variant={isActive ? "secondary" : "ghost"}
+              size="icon"
+              className={`w-full h-12 rounded-xl transition-all duration-200 ${isActive ? 'bg-muted text-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`}
               onClick={() => {
                 if (!isDisabled) {
                   dispatch({ type: 'SET_SIDEBAR_TAB', tab: id });
@@ -69,61 +49,21 @@ export default function Sidebar() {
                 }
               }}
               disabled={isDisabled}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-200 ease-out ${isActive ? 'bg-[#18181b] text-white font-medium shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]' : 'text-[#a1a1aa] hover:bg-[#18181b] hover:text-[#fafafa]'}
-                ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
-              `}
+              title={label}
             >
-              <Icon size={16} />
-              {label}
-            </button>
+              <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+            </Button>
           );
         })}
       </nav>
 
-      {/* Divider */}
-      <div className="mx-3 border-t border-[#27272a]" />
-
-      {/* Project info */}
-      {state.videoInfo && (
-        <div className="flex flex-col gap-3 p-4 mt-2">
-          <h4 className="text-xs font-medium text-[#a1a1aa] uppercase tracking-wider">
-            Project
-          </h4>
-
-          <div className="flex items-start gap-2">
-            <Film size={14} className="text-[#a1a1aa] mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-[#fafafa] break-all leading-relaxed">
-              {state.videoInfo.original_name}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
-            <div className="flex items-center gap-1.5 text-[#a1a1aa]">
-              <Clock size={11} />
-              {formatDuration(state.videoInfo.duration)}
-            </div>
-            <div className="flex items-center gap-1.5 text-[#a1a1aa]">
-              <Maximize size={11} />
-              {state.videoInfo.width}×{state.videoInfo.height}
-            </div>
-          </div>
-
-          <p className="text-[10px] text-[#a1a1aa]">
-            {state.videoInfo.fps} fps · {formatFileSize(state.videoInfo.file_size)}
-          </p>
-        </div>
-      )}
-
-      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Backend status */}
-      <div className="p-3 border-t border-[#27272a]">
-        <div className="flex items-center gap-2 text-[11px] text-[#a1a1aa]">
-          <div className={`w-1.5 h-1.5 rounded-md ${backendDotClass}`} />
-          Backend {backendLabel}
-        </div>
-      </div>
+      <Button variant="ghost" size="icon" className="w-12 h-12 rounded-xl text-muted-foreground hover:bg-muted/50 hover:text-foreground mb-4">
+        <Settings size={22} />
+      </Button>
+      
+      <div className={`w-2.5 h-2.5 rounded-full ${backendDotClass}`} title={`Backend ${backendLabel}`} />
     </aside>
   );
 }

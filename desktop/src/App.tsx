@@ -42,29 +42,37 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
     );
   }
 
-  if (state.view === 'upload') {
-    return <DropZone />;
-  }
-
   return (
-    <div className="flex flex-1 h-full min-h-0">
-      <div className="flex-1 flex flex-col p-4 min-w-0 bg-zinc-950/30">
-        <VideoPreview />
+    <div className="flex flex-1 h-full min-h-0 bg-background relative">
+      {/* Center Canvas */}
+      <div className="flex-1 flex flex-col relative min-w-0">
+        {/* Minimal top bar inside canvas */}
+        {state.view !== 'upload' && (
+          <header className="h-14 flex items-center px-8 flex-shrink-0">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+              <span>{state.videoInfo?.original_name || 'Project Canvas'}</span>
+            </div>
+          </header>
+        )}
+
+        <div className="flex-1 flex flex-col p-8 pt-2 min-h-0 relative items-center justify-center">
+          {state.view === 'upload' ? <DropZone /> : <VideoPreview />}
+        </div>
+
+        {/* Docked Instruction Bar */}
+        {state.view !== 'upload' && (
+          <div className="px-10 pb-10 flex-shrink-0">
+            <InstructionBar />
+          </div>
+        )}
       </div>
 
-      {state.sidebarTab === 'edit' && state.editPlan && (
-        <div className="w-72 border-l border-zinc-800 bg-black flex flex-col z-10">
-          <EditPlanPanel />
-        </div>
-      )}
-      {state.sidebarTab === 'style' && (
-        <div className="w-72 border-l border-zinc-800 bg-black flex flex-col z-10">
-          <StylePanel />
-        </div>
-      )}
-      {state.sidebarTab === 'highlights' && (
-        <div className="w-72 border-l border-zinc-800 bg-black flex flex-col z-10">
-          <HighlightsPanel />
+      {/* Right Inspector Panel */}
+      {(state.sidebarTab === 'edit' || state.sidebarTab === 'style' || state.sidebarTab === 'highlights') && state.view !== 'upload' && (
+        <div className="w-[340px] border-l border-border bg-card shadow-2xl z-10 flex flex-col">
+          {state.sidebarTab === 'edit' && <EditPlanPanel />}
+          {state.sidebarTab === 'style' && <StylePanel />}
+          {state.sidebarTab === 'highlights' && <HighlightsPanel />}
         </div>
       )}
     </div>
@@ -188,41 +196,28 @@ export default function App() {
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>
-      <div className="flex flex-col h-screen w-screen bg-[#000000]">
-        <header className="flex items-center justify-between px-4 h-12 bg-black border-b border-zinc-800 flex-shrink-0 z-50">
-          <div className="flex items-center gap-2">
-            <Clapperboard size={18} className="text-[#ffffff]" />
-            <span className="text-sm font-semibold tracking-tight">CutAI</span>
-          </div>
-          <button className="p-2 rounded-lg hover:bg-[#18181b] transition-colors">
-            <Settings size={16} className="text-[#a1a1aa]" />
-          </button>
-        </header>
-
+      <div className="flex h-screen w-screen bg-background overflow-hidden">
         {state.error && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--error)]/10 border-b border-[var(--error)]/20 text-sm text-[var(--error)]">
+          <div className="absolute top-0 left-0 w-full flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground text-sm z-50">
             <AlertCircle size={14} />
             <span className="flex-1">{state.error}</span>
             <button
               onClick={() => dispatch({ type: 'SET_ERROR', error: null })}
-              className="p-1 rounded hover:bg-[var(--error)]/20 transition-colors"
+              className="p-1 rounded hover:bg-black/20 transition-colors"
             >
               <X size={14} />
             </button>
           </div>
         )}
 
-        <div className="flex flex-1 min-h-0">
-          <Sidebar />
-          <main className="flex-1 flex flex-col min-h-0">
-            <AppMainContent
-              onRetryBackend={retryBackend}
-              retryingBackend={retryingBackend}
-            />
-          </main>
-        </div>
+        <Sidebar />
+        <main className="flex-1 flex flex-col min-w-0">
+          <AppMainContent
+            onRetryBackend={retryBackend}
+            retryingBackend={retryingBackend}
+          />
+        </main>
 
-        <InstructionBar />
         <JobProgress />
       </div>
     </AppContext.Provider>
