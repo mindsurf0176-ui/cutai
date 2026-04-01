@@ -46,7 +46,7 @@ export default function Sidebar() {
         : 'bg-[var(--error)]';
 
   return (
-    <aside className="flex flex-col w-56 bg-[var(--bg-secondary)] border-r border-[var(--border-color)] h-full">
+    <aside className="flex flex-col w-64 bg-black border-r border-zinc-800 h-full">
       {/* Tab navigation */}
       <nav className="flex flex-col gap-1 p-3">
         {TABS.map(({ id, label, icon: Icon }) => {
@@ -67,13 +67,7 @@ export default function Sidebar() {
                 }
               }}
               disabled={isDisabled}
-              className={`
-                flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm
-                transition-colors duration-150
-                ${isActive
-                  ? 'bg-[var(--accent)]/15 text-[var(--accent)]'
-                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
-                }
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors duration-150 ${isActive ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'}
                 ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
               `}
             >

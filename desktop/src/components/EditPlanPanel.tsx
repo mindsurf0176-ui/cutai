@@ -177,7 +177,7 @@ export default function EditPlanPanel() {
                   disabled={previewBusy}
                   className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                     selected
-                      ? 'bg-[var(--accent)] text-white'
+                      ? 'bg-[var(--accent)] text-black'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   } disabled:cursor-not-allowed disabled:opacity-50`}
                 >
@@ -208,7 +208,7 @@ export default function EditPlanPanel() {
                     disabled={renderBusy}
                     className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                       selected
-                        ? 'bg-[var(--accent)] text-white'
+                        ? 'bg-[var(--accent)] text-black'
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     } disabled:cursor-not-allowed disabled:opacity-50`}
                   >
@@ -283,7 +283,7 @@ export default function EditPlanPanel() {
             disabled={!canRender}
             title={!canRender ? validationMessage ?? 'Render is already running' : undefined}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
-              bg-[var(--accent)] text-white text-sm font-medium
+              bg-[var(--accent)] text-black text-sm font-medium
               hover:bg-[var(--accent-hover)]
               disabled:opacity-40 disabled:cursor-not-allowed
               transition-colors"
