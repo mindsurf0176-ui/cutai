@@ -66,15 +66,43 @@ log "Clearing extended attributes from release artifacts before signing"
 run xattr -cr "$APP_PATH"
 run xattr -cr "$DMG_PATH"
 
-log "Signing app bundle with hardened runtime"
-run codesign --force --deep --options runtime --timestamp --sign "$APPLE_IDENTITY" "$APP_PATH"
+log "Signing all nested Mach-O binaries inside the app bundle (inside-out)"
+SIGN_COUNT=0
+while IFS= read -r -d '' bin; do
+  # Check if it's actually a Mach-O binary
+  if file "$bin" | grep -q 'Mach-O'; then
+    run codesign --force --options runtime --timestamp --sign "$APPLE_IDENTITY" "$bin"
+    SIGN_COUNT=$((SIGN_COUNT + 1))
+  fi
+done < <(find "$APP_PATH" -type f \( -name '*.so' -o -name '*.dylib' -o -name '*.node' \) -print0)
+
+# Also find executables with no extension that are Mach-O (python, python3, etc.)
+while IFS= read -r -d '' bin; do
+  if file "$bin" | grep -q 'Mach-O'; then
+    # Skip if already signed above (has known extension)
+    case "$bin" in
+      *.so|*.dylib|*.node) continue ;;
+    esac
+    run codesign --force --options runtime --timestamp --sign "$APPLE_IDENTITY" "$bin"
+    SIGN_COUNT=$((SIGN_COUNT + 1))
+  fi
+done < <(find "$APP_PATH/Contents" -type f -perm +111 -print0)
+
+log "Signed $SIGN_COUNT nested binaries"
+
+log "Signing top-level app bundle with hardened runtime"
+run codesign --force --options runtime --timestamp --sign "$APPLE_IDENTITY" "$APP_PATH"
 run codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
-log "Checking DMG signature state"
-if ! codesign --verify --verbose=2 "$DMG_PATH" >/dev/null 2>&1; then
-  log "Signing DMG"
-  run codesign --force --timestamp --sign "$APPLE_IDENTITY" "$DMG_PATH"
-fi
+log "Recreating DMG from signed app bundle"
+DMG_VOLNAME="CutAI"
+DMG_TEMP="${DMG_PATH%.dmg}_unsigned.dmg"
+run rm -f "$DMG_PATH" "$DMG_TEMP"
+run hdiutil create -volname "$DMG_VOLNAME" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_TEMP"
+run mv "$DMG_TEMP" "$DMG_PATH"
+
+log "Signing DMG"
+run codesign --force --timestamp --sign "$APPLE_IDENTITY" "$DMG_PATH"
 run codesign --verify --verbose=2 "$DMG_PATH"
 
 if [[ "$SKIP_NOTARY" == "1" ]]; then
