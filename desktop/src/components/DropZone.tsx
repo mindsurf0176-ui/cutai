@@ -85,19 +85,19 @@ export default function DropZone() {
   // Backend check removed - show upload UI always
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6 pb-32 w-full">
+    <div className="flex flex-col items-center gap-4 w-full px-8">
       <div
         onClick={handleClick}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          relative flex flex-col items-center justify-center w-full max-w-2xl aspect-[21/9]
-          rounded-3xl border-2 border-dashed cursor-pointer
-          transition-all duration-500 ease-out overflow-hidden group
+          flex items-center justify-center gap-4 w-full max-w-md
+          rounded-2xl border border-dashed cursor-pointer px-8 py-5
+          transition-all duration-300 ease-out group
           ${dragging
-            ? 'border-violet-500 bg-violet-500/10 scale-[1.02] shadow-[0_0_50px_rgba(168,85,247,0.2)]'
-            : 'border-white/10 bg-[#12121A]/50 hover:border-violet-500/50 hover:bg-[#12121A] hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)]'
+            ? 'border-violet-500 bg-violet-500/10'
+            : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'
           }
         `}
       >
@@ -134,11 +134,11 @@ export default function DropZone() {
             </p>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-20 h-20 mb-4 rounded-full bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-500"><Upload size={32} className="text-violet-400" /></div>
-            <p className="text-2xl font-bold text-white tracking-tight">Drop your video here</p>
-            <p className="text-sm text-zinc-400 mt-2 font-medium">or click to browse from your computer</p>
-            <div className="mt-8 px-6 py-2.5 rounded-full bg-white text-black font-semibold text-sm hover:scale-105 active:scale-95 transition-all cursor-pointer">Select Video</div>
+          <div className="flex items-center gap-4">
+            <Upload size={20} className="text-white/40 group-hover:text-violet-400 transition-colors flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-white/60 group-hover:text-white/80 transition-colors">Drop video here or <span className="text-violet-400 underline underline-offset-2">browse files</span></p>
+            </div>
           </div>
         )}
       </div>
