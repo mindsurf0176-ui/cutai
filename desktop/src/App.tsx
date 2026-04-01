@@ -46,22 +46,16 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
         </div>
       )}
       {state.view === 'upload' ? (
-        /* ===== UPLOAD STATE: Full immersive welcome ===== */
-        <div className="flex-1 flex flex-col items-center justify-center relative rounded-2xl border border-white/5 bg-[#0A0A0F] shadow-2xl overflow-hidden ring-1 ring-white/5">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.06)_0%,transparent_60%)] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[#0A0A0F] to-transparent pointer-events-none" />
-          
-          <div className="flex flex-col items-center justify-center gap-2 mb-10 z-10">
-            <h1 className="text-4xl font-bold text-white tracking-tight">Edit videos with AI</h1>
-            <p className="text-lg text-white/40 font-medium">Drop a video or describe what you want to create</p>
-          </div>
-
-          <div className="w-full max-w-3xl px-8 z-50 mb-10">
-            <InstructionBar />
-          </div>
-
-          <div className="z-10">
+        /* ===== UPLOAD STATE: Minimal, action-first (Runway/Descript style) ===== */
+        <div className="flex-1 flex flex-col relative rounded-2xl border border-white/5 bg-[#0A0A0F] shadow-2xl overflow-hidden ring-1 ring-white/5">
+          {/* Full-area drop target */}
+          <div className="flex-1 flex flex-col items-center justify-center relative">
             <DropZone />
+          </div>
+
+          {/* Command bar docked at bottom */}
+          <div className="w-full px-6 pb-6 z-50">
+            <InstructionBar />
           </div>
         </div>
       ) : (

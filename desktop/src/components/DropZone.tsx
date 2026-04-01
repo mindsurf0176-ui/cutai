@@ -85,19 +85,19 @@ export default function DropZone() {
   // Backend check removed - show upload UI always
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full px-8">
+    <div className="flex flex-col items-center gap-4 w-full">
       <div
         onClick={handleClick}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          flex items-center justify-center gap-4 w-full max-w-md
-          rounded-2xl border border-dashed cursor-pointer px-8 py-5
+          flex flex-col items-center justify-center w-64 h-48
+          rounded-2xl border border-dashed cursor-pointer
           transition-all duration-300 ease-out group
           ${dragging
-            ? 'border-violet-500 bg-violet-500/10'
-            : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'
+            ? 'border-violet-500/60 bg-violet-500/5 scale-[1.03]'
+            : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'
           }
         `}
       >
@@ -134,10 +134,13 @@ export default function DropZone() {
             </p>
           </div>
         ) : (
-          <div className="flex items-center gap-4">
-            <Upload size={20} className="text-white/40 group-hover:text-violet-400 transition-colors flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-white/60 group-hover:text-white/80 transition-colors">Drop video here or <span className="text-violet-400 underline underline-offset-2">browse files</span></p>
+          <div className="flex flex-col items-center gap-5">
+            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-violet-500/10 group-hover:border-violet-500/30 transition-all duration-300">
+              <Upload size={24} className="text-white/30 group-hover:text-violet-400 transition-colors duration-300" />
+            </div>
+            <div className="text-center">
+              <p className="text-[15px] font-semibold text-white/70">Drop video here</p>
+              <p className="text-[13px] text-white/30 mt-1">or click to browse</p>
             </div>
           </div>
         )}
