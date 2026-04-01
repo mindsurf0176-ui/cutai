@@ -33,7 +33,7 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
 
   if (state.backendStatus !== 'online') {
     return (
-      <div className="flex-1 rounded-2xl border border-white/5 bg-zinc-950/50 backdrop-blur-xl shadow-2xl flex items-center justify-center">
+      <div className="flex-1 rounded-2xl border border-white/5 bg-[#12121A]/50 backdrop-blur-xl shadow-2xl flex items-center justify-center">
         <BackendGate
           status={state.backendStatus}
           error={state.backendError}
@@ -45,36 +45,44 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
   }
 
   return (
-    <div className="flex flex-1 h-full min-h-0 gap-4">
-      {/* Center Canvas - The Hero Area */}
-      <div className="flex-1 flex flex-col relative min-w-0 rounded-2xl border border-white/5 bg-[#0A0A0F] shadow-2xl overflow-hidden ring-1 ring-white/5">
-        {/* Top Bar Floating inside canvas */}
-        {state.view !== 'upload' && (
-          <header className="absolute top-0 left-0 w-full h-16 flex items-center px-6 z-10 bg-gradient-to-b from-black/80 to-transparent">
-            <div className="flex items-center gap-2 text-sm text-zinc-400 font-medium">
-              {state.videoInfo?.original_name || 'PROJECT CANVAS'}
-            </div>
-          </header>
-        )}
+    <div className="flex flex-col flex-1 h-full min-h-0 gap-3">
+      {/* Top Split: Video Canvas (Left) & Inspector (Right) */}
+      <div className="flex flex-1 min-h-0 gap-3">
+        {/* Main Video Canvas */}
+        <div className="flex-1 flex flex-col relative min-w-0 rounded-2xl border border-white/5 bg-[#0A0A0F] shadow-2xl overflow-hidden ring-1 ring-white/5">
+          {state.view !== 'upload' && (
+            <header className="absolute top-0 left-0 w-full h-12 flex items-center justify-between px-5 z-10 bg-gradient-to-b from-black/60 to-transparent">
+              <span className="text-sm font-semibold text-white/80 tracking-wide">{state.videoInfo?.original_name || 'PROJECT CANVAS'}</span>
+            </header>
+          )}
 
-        <div className="flex-1 flex flex-col items-center justify-center p-0 m-0 w-full h-full relative">
-          {state.view === 'upload' ? <DropZone /> : <VideoPreview />}
+          <div className="flex-1 flex items-center justify-center p-0 m-0 w-full h-full relative">
+            {state.view === 'upload' ? <DropZone /> : <VideoPreview />}
+          </div>
         </div>
 
-        {/* Floating Command Bar (Raycast / Linear style) */}
-        {state.view !== 'upload' && (
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl z-50 transition-all duration-500 ease-out translate-y-0 opacity-100">
-            <InstructionBar />
+        {/* Right Inspector Panel */}
+        {(state.sidebarTab === 'edit' || state.sidebarTab === 'style' || state.sidebarTab === 'highlights') && state.view !== 'upload' && (
+          <div className="w-[320px] rounded-2xl border border-white/5 bg-[#12121A]/90 backdrop-blur-2xl shadow-xl z-10 flex flex-col overflow-hidden">
+            {state.sidebarTab === 'edit' && <EditPlanPanel />}
+            {state.sidebarTab === 'style' && <StylePanel />}
+            {state.sidebarTab === 'highlights' && <HighlightsPanel />}
           </div>
         )}
       </div>
 
-      {/* Right Inspector Panel - Floating Card */}
-      {(state.sidebarTab === 'edit' || state.sidebarTab === 'style' || state.sidebarTab === 'highlights') && state.view !== 'upload' && (
-        <div className="w-[320px] rounded-2xl border border-white/5 bg-[#12121A]/80 backdrop-blur-2xl shadow-2xl z-10 flex flex-col overflow-hidden ring-1 ring-white/5">
-          {state.sidebarTab === 'edit' && <EditPlanPanel />}
-          {state.sidebarTab === 'style' && <StylePanel />}
-          {state.sidebarTab === 'highlights' && <HighlightsPanel />}
+      {/* Bottom Split: Natural Language Command Bar & Timeline */}
+      {state.view !== 'upload' && (
+        <div className="h-[220px] flex-shrink-0 flex flex-col gap-3">
+          {/* Core UX: The NLP Command Bar sits right above the timeline, acting as the brain */}
+          <div className="w-full flex-shrink-0 transition-all duration-500 ease-out translate-y-0 opacity-100 z-50">
+            <InstructionBar />
+          </div>
+          
+          {/* Fake Timeline Area for layout context (SceneTimeline would go here in full implementation) */}
+          <div className="flex-1 rounded-2xl border border-white/5 bg-[#0A0A0F] shadow-inner ring-1 ring-white/5 overflow-hidden flex items-center justify-center">
+            <div className="text-sm text-white/20 font-medium tracking-widest uppercase">Timeline Tracks</div>
+          </div>
         </div>
       )}
     </div>
@@ -198,8 +206,7 @@ export default function App() {
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>
-      {/* Spatial UI Background Wrapper (Arc/Zed style) */}
-      <div className="flex h-screen w-screen bg-[#060609] p-3 gap-3 overflow-hidden selection:bg-zinc-800">
+      <div className="flex h-screen w-screen bg-[#060609] p-3 gap-3 overflow-hidden selection:bg-violet-500/30">
         {state.error && (
           <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-2.5 bg-red-500/10 border border-red-500/20 rounded-full text-red-500 text-sm z-50 backdrop-blur-md shadow-2xl">
             <AlertCircle size={14} />
