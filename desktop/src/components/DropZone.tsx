@@ -85,22 +85,21 @@ export default function DropZone() {
   // Backend check removed - show upload UI always
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full">
-      <div
+    <div
         onClick={handleClick}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          flex flex-col items-center justify-center w-64 h-48
-          rounded-2xl border border-dashed cursor-pointer
+          flex flex-col items-center justify-center w-full h-full cursor-pointer
           transition-all duration-300 ease-out group
           ${dragging
-            ? 'border-violet-500/60 bg-violet-500/5 scale-[1.03]'
-            : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'
+            ? 'bg-violet-500/5'
+            : ''
           }
         `}
       >
+      <div className={`flex flex-col items-center justify-center p-10 rounded-2xl border border-dashed transition-all duration-300 ${dragging ? 'border-violet-500/60 scale-[1.02]' : 'border-white/[0.07] group-hover:border-white/15'}`}>
         <input
           ref={inputRef}
           type="file"
@@ -147,11 +146,11 @@ export default function DropZone() {
       </div>
 
       {uploadError && (
-        <div className="flex items-center gap-2 text-sm text-[var(--error)]">
+        <div className="flex items-center gap-2 text-sm text-red-500 mt-4">
           <AlertCircle size={16} />
           <span>{uploadError}</span>
         </div>
       )}
-    </div>
+      </div>
   );
 }
