@@ -93,19 +93,19 @@ export default function DropZone() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
+    <div className="flex-1 flex flex-col items-center justify-center h-full gap-8 p-10 w-full relative overflow-hidden">
       <div
         onClick={handleClick}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          flex flex-col items-center justify-center w-full max-w-lg aspect-video
-          rounded-lg border-2 border-dashed cursor-pointer
-          transition-all duration-200
+          relative flex flex-col items-center justify-center w-full max-w-2xl aspect-[21/9]
+          rounded-3xl border-2 border-dashed cursor-pointer
+          transition-all duration-500 ease-out overflow-hidden group
           ${dragging
-            ? 'border-[#ffffff] bg-[#ffffff]/10 scale-[1.02]'
-            : 'border-[#27272a] bg-[#09090b] hover:border-[#ffffff]/50 hover:bg-[#18181b]'
+            ? 'border-violet-500 bg-violet-500/10 scale-[1.02] shadow-[0_0_50px_rgba(168,85,247,0.2)]'
+            : 'border-white/10 bg-[#12121A]/50 hover:border-violet-500/50 hover:bg-[#12121A] hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)]'
           }
         `}
       >
@@ -143,9 +143,10 @@ export default function DropZone() {
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3">
-            <Upload size={40} className="text-[#a1a1aa]" />
-            <p className="text-sm font-medium">Drop your video here</p>
-            <p className="text-xs text-[#a1a1aa]">or click to browse</p>
+            <div className="w-20 h-20 mb-4 rounded-full bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-500"><Upload size={32} className="text-violet-400" /></div>
+            <p className="text-2xl font-bold text-white tracking-tight">Drop your video here</p>
+            <p className="text-sm text-zinc-400 mt-2 font-medium">or click to browse from your computer</p>
+            <div className="mt-8 px-6 py-2.5 rounded-full bg-white text-black font-semibold text-sm hover:scale-105 active:scale-95 transition-all cursor-pointer">Select Video</div>
           </div>
         )}
       </div>

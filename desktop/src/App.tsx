@@ -57,7 +57,7 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
           </header>
         )}
 
-        <div className="flex-1 flex items-center justify-center p-0 m-0 w-full h-full relative">
+        <div className="flex-1 flex flex-col items-center justify-center p-0 m-0 w-full h-full relative">
           {state.view === 'upload' ? <DropZone /> : <VideoPreview />}
         </div>
 
