@@ -45,40 +45,57 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
           </button>
         </div>
       )}
-      {/* Top Split: Video Canvas (Left) & Inspector (Right) */}
-      <div className="flex flex-1 min-h-0 gap-3">
-        {/* Main Video Canvas */}
-        <div className="flex-1 flex flex-col relative min-w-0 rounded-2xl border border-white/5 bg-[#0A0A0F] shadow-2xl overflow-hidden ring-1 ring-white/5">
-          {state.view !== 'upload' && (
-            <header className="absolute top-0 left-0 w-full h-12 flex items-center justify-between px-5 z-10 bg-gradient-to-b from-black/60 to-transparent">
-              <span className="text-sm font-semibold text-white/80 tracking-wide">{state.videoInfo?.original_name || 'PROJECT CANVAS'}</span>
-            </header>
-          )}
+      {state.view === 'upload' ? (
+        /* ===== UPLOAD STATE: Full immersive welcome ===== */
+        <div className="flex-1 flex flex-col items-center justify-center relative rounded-2xl border border-white/5 bg-[#0A0A0F] shadow-2xl overflow-hidden ring-1 ring-white/5">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.06)_0%,transparent_60%)] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[#0A0A0F] to-transparent pointer-events-none" />
+          
+          <div className="flex flex-col items-center justify-center gap-2 mb-10 z-10">
+            <h1 className="text-4xl font-bold text-white tracking-tight">Edit videos with AI</h1>
+            <p className="text-lg text-white/40 font-medium">Drop a video or describe what you want to create</p>
+          </div>
 
-          <div className="flex-1 flex items-center justify-center p-0 m-0 w-full h-full relative">
-            {state.view === 'upload' ? <DropZone /> : <VideoPreview />}
+          <div className="w-full max-w-3xl px-8 z-50 mb-10">
+            <InstructionBar />
+          </div>
+
+          <div className="z-10">
+            <DropZone />
           </div>
         </div>
+      ) : (
+        /* ===== EDITING STATE: True NLE layout ===== */
+        <>
+          <div className="flex flex-1 min-h-0 gap-3">
+            <div className="flex-1 flex flex-col relative min-w-0 rounded-2xl border border-white/5 bg-[#0A0A0F] shadow-2xl overflow-hidden ring-1 ring-white/5">
+              <header className="absolute top-0 left-0 w-full h-12 flex items-center justify-between px-5 z-10 bg-gradient-to-b from-black/60 to-transparent">
+                <span className="text-sm font-semibold text-white/80">{state.videoInfo?.original_name || 'Untitled Project'}</span>
+              </header>
+              <div className="flex-1 flex items-center justify-center w-full h-full relative">
+                <VideoPreview />
+              </div>
+            </div>
 
-        {/* Right Inspector Panel */}
-        {(state.sidebarTab === 'edit' || state.sidebarTab === 'style' || state.sidebarTab === 'highlights') && state.view !== 'upload' && (
-          <div className="w-[320px] rounded-2xl border border-white/5 bg-[#12121A]/90 backdrop-blur-2xl shadow-xl z-10 flex flex-col overflow-hidden">
-            {state.sidebarTab === 'edit' && <EditPlanPanel />}
-            {state.sidebarTab === 'style' && <StylePanel />}
-            {state.sidebarTab === 'highlights' && <HighlightsPanel />}
+            {(state.sidebarTab === 'edit' || state.sidebarTab === 'style' || state.sidebarTab === 'highlights') && (
+              <div className="w-[320px] rounded-2xl border border-white/5 bg-[#12121A]/90 backdrop-blur-2xl shadow-xl z-10 flex flex-col overflow-hidden">
+                {state.sidebarTab === 'edit' && <EditPlanPanel />}
+                {state.sidebarTab === 'style' && <StylePanel />}
+                {state.sidebarTab === 'highlights' && <HighlightsPanel />}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Bottom Split: Natural Language Command Bar & Timeline - Always visible */}
-      <div className="h-[200px] flex-shrink-0 flex flex-col gap-3">
-        <div className="w-full flex-shrink-0 z-50">
-          <InstructionBar />
-        </div>
-        <div className="flex-1 rounded-2xl border border-white/5 bg-[#0A0A0F] ring-1 ring-white/5 overflow-hidden flex items-center justify-center">
-          <div className="text-sm text-white/20 font-medium tracking-widest uppercase">Timeline Tracks</div>
-        </div>
-      </div>
+          <div className="h-[200px] flex-shrink-0 flex flex-col gap-3">
+            <div className="w-full flex-shrink-0 z-50">
+              <InstructionBar />
+            </div>
+            <div className="flex-1 rounded-2xl border border-white/5 bg-[#0A0A0F] ring-1 ring-white/5 overflow-hidden flex items-center justify-center">
+              <div className="text-sm text-white/20 font-medium tracking-widest uppercase">Timeline</div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
