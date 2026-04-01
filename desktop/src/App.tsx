@@ -33,43 +33,45 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
 
   if (state.backendStatus !== 'online') {
     return (
-      <BackendGate
-        status={state.backendStatus}
-        error={state.backendError}
-        onRetry={onRetryBackend}
-        retrying={retryingBackend}
-      />
+      <div className="flex-1 rounded-2xl border border-white/10 bg-zinc-950/50 backdrop-blur-xl shadow-2xl flex items-center justify-center">
+        <BackendGate
+          status={state.backendStatus}
+          error={state.backendError}
+          onRetry={onRetryBackend}
+          retrying={retryingBackend}
+        />
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-1 h-full min-h-0 bg-background relative">
-      {/* Center Canvas */}
-      <div className="flex-1 flex flex-col relative min-w-0">
-        {/* Minimal top bar inside canvas */}
+    <div className="flex flex-1 h-full min-h-0 gap-4">
+      {/* Center Canvas - The Hero Area */}
+      <div className="flex-1 flex flex-col relative min-w-0 rounded-2xl border border-white/5 bg-[#050505] shadow-2xl overflow-hidden ring-1 ring-white/5">
+        {/* Top Bar Floating inside canvas */}
         {state.view !== 'upload' && (
-          <header className="h-14 flex items-center px-8 flex-shrink-0">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-              <span>{state.videoInfo?.original_name || 'Project Canvas'}</span>
+          <header className="absolute top-0 left-0 w-full h-16 flex items-center px-6 z-10 bg-gradient-to-b from-black/80 to-transparent">
+            <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-medium tracking-[0.2em] uppercase">
+              {state.videoInfo?.original_name || 'PROJECT CANVAS'}
             </div>
           </header>
         )}
 
-        <div className="flex-1 flex flex-col p-8 pt-2 min-h-0 relative items-center justify-center">
+        <div className="flex-1 flex items-center justify-center p-0 m-0 w-full h-full relative">
           {state.view === 'upload' ? <DropZone /> : <VideoPreview />}
         </div>
 
-        {/* Docked Instruction Bar */}
+        {/* Floating Command Bar (Raycast / Linear style) */}
         {state.view !== 'upload' && (
-          <div className="px-10 pb-10 flex-shrink-0">
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl z-50 transition-all duration-500 ease-out translate-y-0 opacity-100">
             <InstructionBar />
           </div>
         )}
       </div>
 
-      {/* Right Inspector Panel */}
+      {/* Right Inspector Panel - Floating Card */}
       {(state.sidebarTab === 'edit' || state.sidebarTab === 'style' || state.sidebarTab === 'highlights') && state.view !== 'upload' && (
-        <div className="w-[340px] border-l border-border bg-card shadow-2xl z-10 flex flex-col">
+        <div className="w-[320px] rounded-2xl border border-white/10 bg-zinc-950/80 backdrop-blur-2xl shadow-2xl z-10 flex flex-col overflow-hidden ring-1 ring-white/5">
           {state.sidebarTab === 'edit' && <EditPlanPanel />}
           {state.sidebarTab === 'style' && <StylePanel />}
           {state.sidebarTab === 'highlights' && <HighlightsPanel />}
@@ -196,16 +198,17 @@ export default function App() {
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>
-      <div className="flex h-screen w-screen bg-background overflow-hidden">
+      {/* Spatial UI Background Wrapper (Arc/Zed style) */}
+      <div className="flex h-screen w-screen bg-[#000000] p-3 gap-3 overflow-hidden selection:bg-zinc-800">
         {state.error && (
-          <div className="absolute top-0 left-0 w-full flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground text-sm z-50">
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-2.5 bg-red-500/10 border border-red-500/20 rounded-full text-red-500 text-sm z-50 backdrop-blur-md shadow-2xl">
             <AlertCircle size={14} />
-            <span className="flex-1">{state.error}</span>
+            <span className="font-medium">{state.error}</span>
             <button
               onClick={() => dispatch({ type: 'SET_ERROR', error: null })}
-              className="p-1 rounded hover:bg-black/20 transition-colors"
+              className="p-1 rounded-full hover:bg-red-500/20 transition-colors ml-2"
             >
-              <X size={14} />
+              <X size={12} />
             </button>
           </div>
         )}

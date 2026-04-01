@@ -22,8 +22,8 @@ export default function Sidebar() {
   const backendDotClass = state.backendStatus === 'starting' || state.backendStatus === 'checking' ? 'bg-yellow-500' : state.backendOnline ? 'bg-green-500' : 'bg-red-500';
 
   return (
-    <aside className="w-16 flex flex-col items-center bg-card border-r border-border py-5 z-20 flex-shrink-0 shadow-lg">
-      <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-foreground text-background mb-8 shadow-sm">
+    <aside className="w-[68px] flex flex-col items-center bg-zinc-950/80 backdrop-blur-2xl border border-white/10 rounded-2xl py-4 z-20 flex-shrink-0 shadow-2xl ring-1 ring-white/5">
+      <div className="w-11 h-11 flex items-center justify-center rounded-[14px] bg-gradient-to-b from-zinc-100 to-zinc-300 text-black mb-6 shadow-[0_2px_10px_rgba(255,255,255,0.1)]">
         <Clapperboard size={20} />
       </div>
 
@@ -63,7 +63,7 @@ export default function Sidebar() {
         <Settings size={22} />
       </Button>
       
-      <div className={`w-2.5 h-2.5 rounded-full ${backendDotClass}`} title={`Backend ${backendLabel}`} />
+      <div className={`w-2 h-2 rounded-full mb-2 ${backendDotClass}`} title={`Backend ${backendLabel}`} />
     </aside>
   );
 }
