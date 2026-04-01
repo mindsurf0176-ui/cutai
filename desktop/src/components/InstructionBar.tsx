@@ -56,24 +56,24 @@ export default function InstructionBar() {
   };
 
   return (
-    <div className="border-t border-[#27272a] bg-[#09090b] px-4 py-3">
+    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl z-50 px-4 transition-all duration-300">
       {selectedStylePreset && state.videoId && (
         <div className="mb-3 flex items-start justify-between gap-3 rounded-lg border border-[#ffffff]/25 bg-[#ffffff]/10 px-3 py-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Wand2 size={12} className="text-[#ffffff]" />
-              <span className="text-xs font-medium text-[#fafafa]">
+              <span className="text-xs font-medium text-zinc-200">
                 Planning with {selectedStylePreset.name}
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-[#a1a1aa]">
+            <p className="mt-1 text-[11px] text-zinc-500">
               New instructions use this preset as context instead of only applying it immediately.
             </p>
           </div>
           <button
             type="button"
             onClick={() => dispatch({ type: 'SET_PLANNING_STYLE_PRESET', preset: null })}
-            className="rounded-md p-1 text-[#a1a1aa] hover:bg-[#ffffff]/10 hover:text-[#fafafa] transition-colors"
+            className="rounded-md p-1 text-zinc-500 hover:bg-[#ffffff]/10 hover:text-zinc-200 transition-colors"
             aria-label="Clear planning style"
           >
             <X size={12} />
@@ -90,7 +90,7 @@ export default function InstructionBar() {
               onClick={() => handleSubmit(preset)}
               disabled={disabled}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md
-                bg-[#18181b] text-[#a1a1aa]
+                bg-[#18181b] text-zinc-500
                 hover:bg-[#ffffff]/20 hover:text-[#ffffff]
                 disabled:opacity-40 disabled:cursor-not-allowed
                 transition-colors"
@@ -104,7 +104,7 @@ export default function InstructionBar() {
 
       {/* Plan summary */}
       {state.editPlan && (
-        <div className="mb-2 px-3 py-2 rounded-lg bg-[#ffffff]/10 border border-[#ffffff]/20 text-xs text-[#a1a1aa]">
+        <div className="mb-2 px-3 py-2 rounded-lg bg-[#ffffff]/10 border border-[#ffffff]/20 text-xs text-zinc-500">
           <span className="text-[#ffffff] font-medium">Plan:</span>{' '}
           {state.editPlan.summary}
           {selectedStylePreset && (
@@ -132,7 +132,7 @@ export default function InstructionBar() {
           }
           disabled={disabled}
           className="flex-1 bg-[#000000] border border-[#27272a] rounded-lg px-4 py-2.5 text-sm
-            text-[#fafafa] placeholder:text-[#a1a1aa]/50
+            text-zinc-200 placeholder:text-zinc-500/50
             focus:outline-none focus:border-[#ffffff]
             disabled:opacity-40 disabled:cursor-not-allowed
             transition-colors"
