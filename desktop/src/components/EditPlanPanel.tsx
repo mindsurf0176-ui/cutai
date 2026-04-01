@@ -100,7 +100,7 @@ export default function EditPlanPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--bg-tertiary)]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-color)]">
         <h3 className="text-sm font-medium">Edit Plan</h3>
         <button
           onClick={() => dispatch({ type: 'CLEAR_EDIT_PLAN' })}
@@ -110,7 +110,7 @@ export default function EditPlanPanel() {
         </button>
       </div>
 
-      <div className="px-4 py-3 text-xs text-[var(--text-secondary)] border-b border-[var(--bg-tertiary)]">
+      <div className="px-4 py-3 text-xs text-[var(--text-secondary)] border-b border-[var(--border-color)]">
         <p className="italic">"{editPlan.instruction}"</p>
         <p className="mt-1">
           Estimated output: {formatTime(editPlan.estimated_duration)}
@@ -123,7 +123,7 @@ export default function EditPlanPanel() {
           return (
             <div
               key={index}
-              className="flex items-center gap-3 px-4 py-3 border-b border-[var(--bg-tertiary)]/50 group hover:bg-[var(--bg-tertiary)]/30 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-color)]/50 group hover:bg-[var(--bg-tertiary)]/30 transition-colors"
             >
               <div className="w-7 h-7 rounded-md bg-[var(--accent)]/10 flex items-center justify-center flex-shrink-0">
                 <Icon size={14} className="text-[var(--accent)]" />
@@ -157,7 +157,7 @@ export default function EditPlanPanel() {
         )}
       </div>
 
-      <div className="border-t border-[var(--bg-tertiary)] px-4 py-3">
+      <div className="border-t border-[var(--border-color)] px-4 py-3">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-medium text-[var(--text-primary)]">Preview quality</p>
@@ -165,7 +165,7 @@ export default function EditPlanPanel() {
               Lower resolutions generate faster.
             </p>
           </div>
-          <div className="inline-flex rounded-lg border border-[var(--bg-tertiary)] bg-[var(--bg-primary)] p-1">
+          <div className="inline-flex rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] p-1">
             {PREVIEW_RESOLUTIONS.map((resolution) => {
               const selected = previewResolution === resolution;
 
@@ -196,7 +196,7 @@ export default function EditPlanPanel() {
                 {selectedRenderPreset.description}
               </p>
             </div>
-            <div className="inline-flex rounded-lg border border-[var(--bg-tertiary)] bg-[var(--bg-primary)] p-1">
+            <div className="inline-flex rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] p-1">
               {RENDER_PRESET_OPTIONS.map((preset) => {
                 const selected = renderPreset === preset.value;
 
@@ -246,7 +246,7 @@ export default function EditPlanPanel() {
                     className={`rounded-lg border px-3 py-2 text-left transition-colors ${
                       selected
                         ? 'border-[var(--accent)] bg-[var(--accent)]/10'
-                        : 'border-[var(--bg-tertiary)] bg-[var(--bg-primary)] hover:border-[var(--accent)]/40'
+                        : 'border-[var(--border-color)] bg-[var(--bg-primary)] hover:border-[var(--accent)]/40'
                     } disabled:cursor-not-allowed disabled:opacity-50`}
                   >
                     <p className="text-xs font-medium text-[var(--text-primary)]">{option.label}</p>

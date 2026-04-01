@@ -1,40 +1,58 @@
 @import "tailwindcss";
 
-/* Dark theme defaults */
+/* 
+  World-Class Ultra-Minimalist Linear/Vercel Theme
+*/
 :root {
-  --bg-primary: #0f0f0f;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #252525;
-  --text-primary: #e0e0e0;
-  --text-secondary: #888;
-  --accent: #6366f1;
-  --accent-hover: #818cf8;
-  --success: #22c55e;
-  --warning: #eab308;
-  --error: #ef4444;
+  /* Core Backgrounds */
+  --bg-primary: #000000;       /* Pure black */
+  --bg-secondary: #0A0A0A;     /* Zinc 950 panels */
+  --bg-tertiary: #18181B;      /* Zinc 900 borders/hover states */
+  
+  /* Text Colors */
+  --text-primary: #EDEDED;     /* Clean off-white */
+  --text-secondary: #A1A1AA;   /* Zinc 400 */
+  --text-tertiary: #52525B;    /* Zinc 600 disabled */
+  
+  /* Solid, subdued Accent (Vercel blue / Linear indigo) */
+  --accent: #E2E8F0;           /* Clean solid white/gray */
+  --accent-hover: #FFFFFF;     
+  
+  /* Status Colors */
+  --success: #10B981;          /* Flat Emerald */
+  --warning: #F59E0B;          /* Flat Amber */
+  --error: #EF4444;            /* Flat Red */
+  
+  /* UI Elements */
+  --border-color: #27272A;     /* Zinc 800 - Crisp, thin borders */
+  --panel-radius: 8px;
+  --button-radius: 6px;
 }
 
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   margin: 0;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling - Minimalist */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-tertiary);
-  border-radius: 3px;
+  background: var(--border-color);
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--text-tertiary);
 }
 
 /* Animations */
@@ -50,5 +68,11 @@ body {
 }
 
 .animate-in {
-  animation: slide-in-from-bottom-4 0.3s ease-out;
+  animation: slide-in-from-bottom-4 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Selection */
+::selection {
+  background: #3F3F46;
+  color: white;
 }

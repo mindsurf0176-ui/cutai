@@ -51,7 +51,7 @@ export default function StylePanel() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-3 border-b border-[var(--bg-tertiary)]">
+      <div className="px-4 py-3 border-b border-[var(--border-color)]">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Palette size={14} />
           Style Presets
@@ -113,7 +113,7 @@ export default function StylePanel() {
                   transition-all duration-200
                   ${isSelectedForPlanning || isApplied
                     ? 'bg-[var(--accent)]/15 border-[var(--accent)]/30'
-                    : 'bg-[var(--bg-tertiary)]/50 border-transparent hover:bg-[var(--bg-tertiary)] hover:border-[var(--bg-tertiary)]'
+                    : 'bg-[var(--bg-tertiary)]/50 border-transparent hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-color)]'
                   }
                 `}
               >

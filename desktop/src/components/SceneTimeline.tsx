@@ -46,7 +46,7 @@ export default function SceneTimeline() {
               title={`Scene ${scene.id}: ${formatTime(scene.start_time)} - ${formatTime(scene.end_time)}`}
             >
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10">
-                <div className="bg-[var(--bg-primary)] border border-[var(--bg-tertiary)] rounded px-2 py-1 text-xs whitespace-nowrap text-[var(--text-primary)]">
+                <div className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded px-2 py-1 text-xs whitespace-nowrap text-[var(--text-primary)]">
                   <span className="font-medium">Scene {scene.id}</span>
                   <br />
                   {formatTime(scene.start_time)} – {formatTime(scene.end_time)}

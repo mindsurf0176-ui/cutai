@@ -53,17 +53,17 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
       </div>
 
       {state.sidebarTab === 'edit' && state.editPlan && (
-        <div className="w-72 border-l border-[var(--bg-tertiary)] bg-[var(--bg-secondary)]">
+        <div className="w-72 border-l border-[var(--border-color)] bg-[var(--bg-secondary)]">
           <EditPlanPanel />
         </div>
       )}
       {state.sidebarTab === 'style' && (
-        <div className="w-72 border-l border-[var(--bg-tertiary)] bg-[var(--bg-secondary)]">
+        <div className="w-72 border-l border-[var(--border-color)] bg-[var(--bg-secondary)]">
           <StylePanel />
         </div>
       )}
       {state.sidebarTab === 'highlights' && (
-        <div className="w-72 border-l border-[var(--bg-tertiary)] bg-[var(--bg-secondary)]">
+        <div className="w-72 border-l border-[var(--border-color)] bg-[var(--bg-secondary)]">
           <HighlightsPanel />
         </div>
       )}
@@ -111,7 +111,7 @@ export default function App() {
 
     if (!canAutoStartBackend()) {
       markBackendOffline(
-        'Auto-start is only available in the Tauri desktop app. In browser dev mode, start `cutai server --host 127.0.0.1 --port 18910` manually.'
+        'Auis only available in the Tauri desktop app. In browser dev mode, start `cutai server --host 127.0.0.1 --port 18910` manually.'
       );
       return;
     }
@@ -189,7 +189,7 @@ export default function App() {
   return (
     <AppContext.Provider value={{ state, dispatch }}>
       <div className="flex flex-col h-screen w-screen bg-[var(--bg-primary)]">
-        <header className="flex items-center justify-between px-4 h-12 bg-[var(--bg-secondary)] border-b border-[var(--bg-tertiary)] flex-shrink-0">
+        <header className="flex items-center justify-between px-4 h-12 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] flex-shrink-0">
           <div className="flex items-center gap-2">
             <Clapperboard size={18} className="text-[var(--accent)]" />
             <span className="text-sm font-semibold tracking-tight">CutAI</span>

@@ -50,7 +50,7 @@ export default function ExportSuccessNotice({
         <button
           type="button"
           onClick={onReveal}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--bg-tertiary)] px-3 py-2 text-xs font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-3 py-2 text-xs font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
         >
           <FolderOpen size={13} />
           Reveal in folder

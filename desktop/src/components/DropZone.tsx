@@ -38,7 +38,7 @@ export default function DropZone() {
         const videoInfo = await getVideoInfo(video_id);
         dispatch({ type: 'SET_VIDEO', videoId: video_id, videoInfo });
 
-        // Auto-start analysis
+        // Auanalysis
         const { job_id } = await analyzeVideo(video_id);
         dispatch({
           type: 'SET_ACTIVE_JOB',
@@ -101,11 +101,11 @@ export default function DropZone() {
         onDrop={handleDrop}
         className={`
           flex flex-col items-center justify-center w-full max-w-lg aspect-video
-          rounded-2xl border-2 border-dashed cursor-pointer
+          rounded-lg border-2 border-dashed cursor-pointer
           transition-all duration-200
           ${dragging
             ? 'border-[var(--accent)] bg-[var(--accent)]/10 scale-[1.02]'
-            : 'border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] hover:border-[var(--accent)]/50 hover:bg-[var(--bg-tertiary)]'
+            : 'border-[var(--border-color)] bg-[var(--bg-secondary)] hover:border-[var(--accent)]/50 hover:bg-[var(--bg-tertiary)]'
           }
         `}
       >

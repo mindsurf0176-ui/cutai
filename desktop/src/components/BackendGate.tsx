@@ -42,9 +42,9 @@ export default function BackendGate({
 
   return (
     <div className="flex h-full items-center justify-center p-8">
-      <div className="flex w-full max-w-lg flex-col gap-5 rounded-3xl border border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] px-8 py-7 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+      <div className="flex w-full max-w-lg flex-col gap-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-8 py-7 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
         <div className="flex items-start gap-4">
-          <div className="mt-0.5 rounded-2xl bg-[var(--bg-primary)] p-3">
+          <div className="mt-0.5 rounded-lg bg-[var(--bg-primary)] p-3">
             {busy ? (
               <LoaderCircle size={26} className="animate-spin text-[var(--accent)]" />
             ) : (
@@ -60,13 +60,13 @@ export default function BackendGate({
         </div>
 
         {status === 'offline' && error && (
-          <div className="flex items-start gap-2 rounded-2xl border border-[var(--warning)]/20 bg-[var(--warning)]/10 px-4 py-3 text-sm text-[var(--text-primary)]">
+          <div className="flex items-start gap-2 rounded-lg border border-[var(--warning)]/20 bg-[var(--warning)]/10 px-4 py-3 text-sm text-[var(--text-primary)]">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0 text-[var(--warning)]" />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-3 border-t border-[var(--bg-tertiary)] pt-4">
+        <div className="flex items-center justify-between gap-3 border-t border-[var(--border-color)] pt-4">
           <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
             Port 18910
           </p>
@@ -74,7 +74,7 @@ export default function BackendGate({
             type="button"
             onClick={onRetry}
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <RefreshCw size={15} className={retrying ? 'animate-spin' : ''} />
             Retry

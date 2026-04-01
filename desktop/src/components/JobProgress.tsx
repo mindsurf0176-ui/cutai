@@ -301,7 +301,7 @@ export default function JobProgress() {
   }[activeJob.status];
 
   return (
-    <div className="fixed bottom-20 right-6 z-50 w-80 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4">
+    <div className="fixed bottom-20 right-6 z-50 w-80 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-md shadow-sm overflow-hidden animate-in slide-in-from-bottom-4">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2 min-w-0">
           <StatusIcon
@@ -367,7 +367,7 @@ export default function JobProgress() {
                     getPreviewDownloadUrl(activeJob.job_id)
                   )
                 }
-                className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg border border-[var(--bg-tertiary)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg border border-[var(--border-color)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
               >
                 <ExternalLink size={14} />
                 {nativeDesktop ? 'Open preview' : 'Open file'}
@@ -424,7 +424,7 @@ export default function JobProgress() {
                     getDownloadUrl(activeJob.job_id)
                   )
                 }
-                className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg border border-[var(--bg-tertiary)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg border border-[var(--border-color)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
               >
                 <ExternalLink size={14} />
                 {nativeDesktop ? 'Open render' : 'Open file'}

@@ -55,7 +55,7 @@ export default function InstructionBar() {
   };
 
   return (
-    <div className="border-t border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] px-4 py-3">
+    <div className="border-t border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3">
       {selectedStylePreset && state.videoId && (
         <div className="mb-3 flex items-start justify-between gap-3 rounded-lg border border-[var(--accent)]/25 bg-[var(--accent)]/10 px-3 py-2">
           <div className="min-w-0">
@@ -130,7 +130,7 @@ export default function InstructionBar() {
               : 'Upload a video first to start editing'
           }
           disabled={disabled}
-          className="flex-1 bg-[var(--bg-primary)] border border-[var(--bg-tertiary)] rounded-lg px-4 py-2.5 text-sm
+          className="flex-1 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-sm
             text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/50
             focus:outline-none focus:border-[var(--accent)]
             disabled:opacity-40 disabled:cursor-not-allowed

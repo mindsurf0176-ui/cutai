@@ -46,7 +46,7 @@ export default function Sidebar() {
         : 'bg-[var(--error)]';
 
   return (
-    <aside className="flex flex-col w-56 bg-[var(--bg-secondary)] border-r border-[var(--bg-tertiary)] h-full">
+    <aside className="flex flex-col w-56 bg-[var(--bg-secondary)] border-r border-[var(--border-color)] h-full">
       {/* Tab navigation */}
       <nav className="flex flex-col gap-1 p-3">
         {TABS.map(({ id, label, icon: Icon }) => {
@@ -85,7 +85,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Divider */}
-      <div className="mx-3 border-t border-[var(--bg-tertiary)]" />
+      <div className="mx-3 border-t border-[var(--border-color)]" />
 
       {/* Project info */}
       {state.videoInfo && (
@@ -122,7 +122,7 @@ export default function Sidebar() {
       <div className="flex-1" />
 
       {/* Backend status */}
-      <div className="p-3 border-t border-[var(--bg-tertiary)]">
+      <div className="p-3 border-t border-[var(--border-color)]">
         <div className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)]">
           <div className={`w-1.5 h-1.5 rounded-full ${backendDotClass}`} />
           Backend {backendLabel}

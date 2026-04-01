@@ -44,7 +44,7 @@ export default function HighlightsPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-3 border-b border-[var(--bg-tertiary)]">
+      <div className="px-4 py-3 border-b border-[var(--border-color)]">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Sparkles size={14} />
           Highlights
@@ -78,7 +78,7 @@ export default function HighlightsPanel() {
           <select
             value={style}
             onChange={(e) => setStyle(e.target.value)}
-            className="w-full rounded-lg border border-[var(--bg-tertiary)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+            className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
           >
             {STYLE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -88,12 +88,12 @@ export default function HighlightsPanel() {
           </select>
         </label>
 
-        <div className="rounded-lg border border-[var(--bg-tertiary)] bg-[var(--bg-tertiary)]/30 p-3 text-xs text-[var(--text-secondary)] leading-relaxed">
+        <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-tertiary)]/30 p-3 text-xs text-[var(--text-secondary)] leading-relaxed">
           CutAI will score scenes, build a highlight plan, and send it back to the Edit tab for review before rendering.
         </div>
       </div>
 
-      <div className="px-4 py-3 border-t border-[var(--bg-tertiary)]">
+      <div className="px-4 py-3 border-t border-[var(--border-color)]">
         <button
           onClick={handleGenerate}
           disabled={!state.videoId || loading}
