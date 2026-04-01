@@ -22,8 +22,8 @@ export default function Sidebar() {
   const backendDotClass = state.backendStatus === 'starting' || state.backendStatus === 'checking' ? 'bg-yellow-500' : state.backendOnline ? 'bg-green-500' : 'bg-red-500';
 
   return (
-    <aside className="w-[68px] flex flex-col items-center bg-zinc-950/80 backdrop-blur-2xl border border-white/10 rounded-2xl py-4 z-20 flex-shrink-0 shadow-2xl ring-1 ring-white/5">
-      <div className="w-11 h-11 flex items-center justify-center rounded-[14px] bg-gradient-to-b from-zinc-100 to-zinc-300 text-black mb-6 shadow-[0_2px_10px_rgba(255,255,255,0.1)]">
+    <aside className="w-[68px] flex flex-col items-center bg-[#12121A]/80 backdrop-blur-2xl border border-white/10 rounded-2xl py-4 z-20 flex-shrink-0 shadow-2xl ring-1 ring-white/5">
+      <div className="w-11 h-11 flex items-center justify-center rounded-[14px] bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 text-white mb-6 shadow-[0_4px_20px_rgba(168,85,247,0.4)]">
         <Clapperboard size={20} />
       </div>
 
@@ -37,7 +37,7 @@ export default function Sidebar() {
               key={id}
               variant={isActive ? "secondary" : "ghost"}
               size="icon"
-              className={`w-full h-12 rounded-xl transition-all duration-200 ${isActive ? 'bg-muted text-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`}
+              className={`w-full h-12 rounded-xl transition-all duration-200 ${isActive ? 'bg-white/10 text-white shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
               onClick={() => {
                 if (!isDisabled) {
                   dispatch({ type: 'SET_SIDEBAR_TAB', tab: id });
@@ -59,7 +59,7 @@ export default function Sidebar() {
 
       <div className="flex-1" />
 
-      <Button variant="ghost" size="icon" className="w-12 h-12 rounded-xl text-muted-foreground hover:bg-muted/50 hover:text-foreground mb-4">
+      <Button variant="ghost" size="icon" className="w-12 h-12 rounded-xl text-muted-foreground hover:bg-white/5 hover:text-foreground mb-4">
         <Settings size={22} />
       </Button>
       

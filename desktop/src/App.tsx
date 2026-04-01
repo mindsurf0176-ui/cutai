@@ -33,7 +33,7 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
 
   if (state.backendStatus !== 'online') {
     return (
-      <div className="flex-1 rounded-2xl border border-white/10 bg-zinc-950/50 backdrop-blur-xl shadow-2xl flex items-center justify-center">
+      <div className="flex-1 rounded-2xl border border-white/5 bg-zinc-950/50 backdrop-blur-xl shadow-2xl flex items-center justify-center">
         <BackendGate
           status={state.backendStatus}
           error={state.backendError}
@@ -47,11 +47,11 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
   return (
     <div className="flex flex-1 h-full min-h-0 gap-4">
       {/* Center Canvas - The Hero Area */}
-      <div className="flex-1 flex flex-col relative min-w-0 rounded-2xl border border-white/5 bg-[#050505] shadow-2xl overflow-hidden ring-1 ring-white/5">
+      <div className="flex-1 flex flex-col relative min-w-0 rounded-2xl border border-white/5 bg-[#0A0A0F] shadow-2xl overflow-hidden ring-1 ring-white/5">
         {/* Top Bar Floating inside canvas */}
         {state.view !== 'upload' && (
           <header className="absolute top-0 left-0 w-full h-16 flex items-center px-6 z-10 bg-gradient-to-b from-black/80 to-transparent">
-            <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-medium tracking-[0.2em] uppercase">
+            <div className="flex items-center gap-2 text-sm text-zinc-400 font-medium">
               {state.videoInfo?.original_name || 'PROJECT CANVAS'}
             </div>
           </header>
@@ -71,7 +71,7 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
 
       {/* Right Inspector Panel - Floating Card */}
       {(state.sidebarTab === 'edit' || state.sidebarTab === 'style' || state.sidebarTab === 'highlights') && state.view !== 'upload' && (
-        <div className="w-[320px] rounded-2xl border border-white/10 bg-zinc-950/80 backdrop-blur-2xl shadow-2xl z-10 flex flex-col overflow-hidden ring-1 ring-white/5">
+        <div className="w-[320px] rounded-2xl border border-white/5 bg-[#12121A]/80 backdrop-blur-2xl shadow-2xl z-10 flex flex-col overflow-hidden ring-1 ring-white/5">
           {state.sidebarTab === 'edit' && <EditPlanPanel />}
           {state.sidebarTab === 'style' && <StylePanel />}
           {state.sidebarTab === 'highlights' && <HighlightsPanel />}
@@ -199,7 +199,7 @@ export default function App() {
   return (
     <AppContext.Provider value={{ state, dispatch }}>
       {/* Spatial UI Background Wrapper (Arc/Zed style) */}
-      <div className="flex h-screen w-screen bg-[#000000] p-3 gap-3 overflow-hidden selection:bg-zinc-800">
+      <div className="flex h-screen w-screen bg-[#060609] p-3 gap-3 overflow-hidden selection:bg-zinc-800">
         {state.error && (
           <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-2.5 bg-red-500/10 border border-red-500/20 rounded-full text-red-500 text-sm z-50 backdrop-blur-md shadow-2xl">
             <AlertCircle size={14} />
