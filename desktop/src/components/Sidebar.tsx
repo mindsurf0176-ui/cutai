@@ -23,8 +23,8 @@ export default function Sidebar() {
 
   return (
     <aside className="w-[68px] flex flex-col items-center bg-[#12121A]/80 backdrop-blur-2xl border border-white/10 rounded-2xl py-4 z-20 flex-shrink-0 shadow-2xl ring-1 ring-white/5">
-      <div className="w-11 h-11 flex items-center justify-center rounded-[14px] bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 text-white mb-6 shadow-[0_4px_20px_rgba(168,85,247,0.4)]">
-        <Clapperboard size={20} />
+      <div className="w-12 h-12 flex items-center justify-center mb-6 overflow-hidden rounded-[14px] shadow-[0_4px_20px_rgba(168,85,247,0.4)]">
+        <img src="/logo.png" alt="CutAI" className="w-full h-full object-cover" />
       </div>
 
       <nav className="flex flex-col gap-4 w-full px-2">

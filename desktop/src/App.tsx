@@ -31,21 +31,20 @@ interface AppMainContentProps {
 export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainContentProps) {
   const { state } = useApp();
 
-  if (state.backendStatus !== 'online') {
-    return (
-      <div className="flex-1 rounded-2xl border border-white/5 bg-[#12121A]/50 backdrop-blur-xl shadow-2xl flex items-center justify-center">
-        <BackendGate
-          status={state.backendStatus}
-          error={state.backendError}
-          onRetry={onRetryBackend}
-          retrying={retryingBackend}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col flex-1 h-full min-h-0 gap-3">
+      {/* Backend offline notice (small banner, doesn\'t block UI) */}
+      {state.backendStatus !== 'online' && (
+        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 backdrop-blur-lg flex-shrink-0">
+          <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <span className="text-sm text-amber-200/80 font-medium flex-1">
+            {state.backendStatus === 'checking' ? 'Connecting to backend...' : state.backendStatus === 'starting' ? 'Starting backend...' : 'Backend offline \u2014 start cutai server to enable editing'}
+          </span>
+          <button onClick={onRetryBackend} disabled={retryingBackend} className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors disabled:opacity-50">
+            {retryingBackend ? 'Retrying...' : 'Retry'}
+          </button>
+        </div>
+      )}
       {/* Top Split: Video Canvas (Left) & Inspector (Right) */}
       <div className="flex flex-1 min-h-0 gap-3">
         {/* Main Video Canvas */}
@@ -71,20 +70,15 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
         )}
       </div>
 
-      {/* Bottom Split: Natural Language Command Bar & Timeline */}
-      {state.view !== 'upload' && (
-        <div className="h-[220px] flex-shrink-0 flex flex-col gap-3">
-          {/* Core UX: The NLP Command Bar sits right above the timeline, acting as the brain */}
-          <div className="w-full flex-shrink-0 transition-all duration-500 ease-out translate-y-0 opacity-100 z-50">
-            <InstructionBar />
-          </div>
-          
-          {/* Fake Timeline Area for layout context (SceneTimeline would go here in full implementation) */}
-          <div className="flex-1 rounded-2xl border border-white/5 bg-[#0A0A0F] shadow-inner ring-1 ring-white/5 overflow-hidden flex items-center justify-center">
-            <div className="text-sm text-white/20 font-medium tracking-widest uppercase">Timeline Tracks</div>
-          </div>
+      {/* Bottom Split: Natural Language Command Bar & Timeline - Always visible */}
+      <div className="h-[200px] flex-shrink-0 flex flex-col gap-3">
+        <div className="w-full flex-shrink-0 z-50">
+          <InstructionBar />
         </div>
-      )}
+        <div className="flex-1 rounded-2xl border border-white/5 bg-[#0A0A0F] ring-1 ring-white/5 overflow-hidden flex items-center justify-center">
+          <div className="text-sm text-white/20 font-medium tracking-widest uppercase">Timeline Tracks</div>
+        </div>
+      </div>
     </div>
   );
 }
