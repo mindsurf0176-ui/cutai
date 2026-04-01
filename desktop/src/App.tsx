@@ -48,22 +48,22 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
 
   return (
     <div className="flex flex-1 h-full min-h-0">
-      <div className="flex-1 flex flex-col p-4 min-w-0">
+      <div className="flex-1 flex flex-col p-8 min-w-0 items-center justify-center bg-[#000000] relative">
         <VideoPreview />
       </div>
 
       {state.sidebarTab === 'edit' && state.editPlan && (
-        <div className="w-72 border-l border-[#27272a] bg-[#09090b]">
+        <div className="w-[340px] border-l border-[#27272a]/70 bg-[#09090b] shadow-2xl z-10 flex flex-col">
           <EditPlanPanel />
         </div>
       )}
       {state.sidebarTab === 'style' && (
-        <div className="w-72 border-l border-[#27272a] bg-[#09090b]">
+        <div className="w-[340px] border-l border-[#27272a]/70 bg-[#09090b] shadow-2xl z-10 flex flex-col">
           <StylePanel />
         </div>
       )}
       {state.sidebarTab === 'highlights' && (
-        <div className="w-72 border-l border-[#27272a] bg-[#09090b]">
+        <div className="w-[340px] border-l border-[#27272a]/70 bg-[#09090b] shadow-2xl z-10 flex flex-col">
           <HighlightsPanel />
         </div>
       )}
@@ -189,7 +189,7 @@ export default function App() {
   return (
     <AppContext.Provider value={{ state, dispatch }}>
       <div className="flex flex-col h-screen w-screen bg-[#000000]">
-        <header className="flex items-center justify-between px-4 h-12 bg-[#09090b] border-b border-[#27272a] flex-shrink-0">
+        <header className="flex items-center justify-between px-6 h-14 bg-[#000000] border-b border-[#27272a]/70 flex-shrink-0 z-50">
           <div className="flex items-center gap-2">
             <Clapperboard size={18} className="text-[#ffffff]" />
             <span className="text-sm font-semibold tracking-tight">CutAI</span>
