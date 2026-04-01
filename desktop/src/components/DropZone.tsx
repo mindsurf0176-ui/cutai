@@ -84,7 +84,7 @@ export default function DropZone() {
 
   if (!state.backendOnline) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-[var(--text-secondary)]">
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-[#a1a1aa]">
         <AlertCircle size={48} className="text-[var(--warning)]" />
         <p className="text-lg font-medium">Backend is offline</p>
         <p className="text-sm">Start the CutAI server at port 18910 to continue</p>
@@ -104,8 +104,8 @@ export default function DropZone() {
           rounded-lg border-2 border-dashed cursor-pointer
           transition-all duration-200
           ${dragging
-            ? 'border-[var(--accent)] bg-[var(--accent)]/10 scale-[1.02]'
-            : 'border-[var(--border-color)] bg-[var(--bg-secondary)] hover:border-[var(--accent)]/50 hover:bg-[var(--bg-tertiary)]'
+            ? 'border-[#ffffff] bg-[#ffffff]/10 scale-[1.02]'
+            : 'border-[#27272a] bg-[#09090b] hover:border-[#ffffff]/50 hover:bg-[#18181b]'
           }
         `}
       >
@@ -118,34 +118,34 @@ export default function DropZone() {
         />
         {uploading ? (
           <div className="flex flex-col items-center gap-4 w-full px-12">
-            <Film size={40} className="text-[var(--accent)] animate-pulse" />
-            <p className="text-sm text-[var(--text-secondary)]">
+            <Film size={40} className="text-[#ffffff] animate-pulse" />
+            <p className="text-sm text-[#a1a1aa]">
               Uploading {selectedFile?.name}...
             </p>
             <Progress.Root
-              className="relative w-full h-2 overflow-hidden rounded-md bg-[var(--bg-primary)]"
+              className="relative w-full h-2 overflow-hidden rounded-md bg-[#000000]"
               value={state.uploadProgress}
             >
               <Progress.Indicator
-                className="h-full bg-[var(--accent)] transition-[width] duration-300 ease-out rounded-md"
+                className="h-full bg-[#ffffff] transition-[width] duration-300 ease-out rounded-md"
                 style={{ width: `${state.uploadProgress}%` }}
               />
             </Progress.Root>
-            <p className="text-xs text-[var(--text-secondary)]">{state.uploadProgress}%</p>
+            <p className="text-xs text-[#a1a1aa]">{state.uploadProgress}%</p>
           </div>
         ) : selectedFile ? (
           <div className="flex flex-col items-center gap-3">
-            <Film size={40} className="text-[var(--accent)]" />
+            <Film size={40} className="text-[#ffffff]" />
             <p className="text-sm font-medium">{selectedFile.name}</p>
-            <p className="text-xs text-[var(--text-secondary)]">
+            <p className="text-xs text-[#a1a1aa]">
               {formatFileSize(selectedFile.size)}
             </p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3">
-            <Upload size={40} className="text-[var(--text-secondary)]" />
+            <Upload size={40} className="text-[#a1a1aa]" />
             <p className="text-sm font-medium">Drop your video here</p>
-            <p className="text-xs text-[var(--text-secondary)]">or click to browse</p>
+            <p className="text-xs text-[#a1a1aa]">or click to browse</p>
           </div>
         )}
       </div>

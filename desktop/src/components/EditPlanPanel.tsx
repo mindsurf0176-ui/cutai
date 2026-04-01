@@ -100,17 +100,17 @@ export default function EditPlanPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-color)]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#27272a]">
         <h3 className="text-sm font-medium">Edit Plan</h3>
         <button
           onClick={() => dispatch({ type: 'CLEAR_EDIT_PLAN' })}
-          className="text-xs text-[var(--text-secondary)] hover:text-[var(--error)] transition-colors"
+          className="text-xs text-[#a1a1aa] hover:text-[var(--error)] transition-colors"
         >
           Clear
         </button>
       </div>
 
-      <div className="px-4 py-3 text-xs text-[var(--text-secondary)] border-b border-[var(--border-color)]">
+      <div className="px-4 py-3 text-xs text-[#a1a1aa] border-b border-[#27272a]">
         <p className="italic">"{editPlan.instruction}"</p>
         <p className="mt-1">
           Estimated output: {formatTime(editPlan.estimated_duration)}
@@ -123,20 +123,20 @@ export default function EditPlanPanel() {
           return (
             <div
               key={index}
-              className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-color)]/50 group hover:bg-[var(--bg-tertiary)]/30 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 border-b border-[#27272a]/50 group hover:bg-[#18181b]/30 transition-colors"
             >
-              <div className="w-7 h-7 rounded-md bg-[var(--accent)]/10 flex items-center justify-center flex-shrink-0">
-                <Icon size={14} className="text-[var(--accent)]" />
+              <div className="w-7 h-7 rounded-md bg-[#ffffff]/10 flex items-center justify-center flex-shrink-0">
+                <Icon size={14} className="text-[#ffffff]" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium capitalize">{op.type}</p>
                 {op.description && (
-                  <p className="text-[11px] text-[var(--text-secondary)] truncate">
+                  <p className="text-[11px] text-[#a1a1aa] truncate">
                     {op.description}
                   </p>
                 )}
                 {op.start_time !== undefined && op.end_time !== undefined && (
-                  <p className="text-[10px] text-[var(--text-secondary)] tabular-nums">
+                  <p className="text-[10px] text-[#a1a1aa] tabular-nums">
                     {formatTime(op.start_time)} → {formatTime(op.end_time)}
                   </p>
                 )}
@@ -151,21 +151,21 @@ export default function EditPlanPanel() {
           );
         })}
         {editPlan.operations.length === 0 && (
-          <div className="flex items-center justify-center h-20 text-xs text-[var(--text-secondary)]">
+          <div className="flex items-center justify-center h-20 text-xs text-[#a1a1aa]">
             No operations — add instructions below
           </div>
         )}
       </div>
 
-      <div className="border-t border-[var(--border-color)] px-4 py-3">
+      <div className="border-t border-[#27272a] px-4 py-3">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-medium text-[var(--text-primary)]">Preview quality</p>
-            <p className="text-[11px] text-[var(--text-secondary)]">
+            <p className="text-xs font-medium text-[#fafafa]">Preview quality</p>
+            <p className="text-[11px] text-[#a1a1aa]">
               Lower resolutions generate faster.
             </p>
           </div>
-          <div className="inline-flex rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] p-1">
+          <div className="inline-flex rounded-lg border border-[#27272a] bg-[#000000] p-1">
             {PREVIEW_RESOLUTIONS.map((resolution) => {
               const selected = previewResolution === resolution;
 
@@ -177,8 +177,8 @@ export default function EditPlanPanel() {
                   disabled={previewBusy}
                   className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                     selected
-                      ? 'bg-[var(--accent)] text-black'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      ? 'bg-[#ffffff] text-black'
+                      : 'text-[#a1a1aa] hover:text-[#fafafa]'
                   } disabled:cursor-not-allowed disabled:opacity-50`}
                 >
                   {resolution}p
@@ -191,12 +191,12 @@ export default function EditPlanPanel() {
         <div className="mb-3">
           <div className="mb-2 flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-medium text-[var(--text-primary)]">Render quality</p>
-              <p className="text-[11px] text-[var(--text-secondary)]">
+              <p className="text-xs font-medium text-[#fafafa]">Render quality</p>
+              <p className="text-[11px] text-[#a1a1aa]">
                 {selectedRenderPreset.description}
               </p>
             </div>
-            <div className="inline-flex rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] p-1">
+            <div className="inline-flex rounded-lg border border-[#27272a] bg-[#000000] p-1">
               {RENDER_PRESET_OPTIONS.map((preset) => {
                 const selected = renderPreset === preset.value;
 
@@ -208,8 +208,8 @@ export default function EditPlanPanel() {
                     disabled={renderBusy}
                     className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                       selected
-                        ? 'bg-[var(--accent)] text-black'
-                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        ? 'bg-[#ffffff] text-black'
+                        : 'text-[#a1a1aa] hover:text-[#fafafa]'
                     } disabled:cursor-not-allowed disabled:opacity-50`}
                   >
                     {preset.label}
@@ -224,8 +224,8 @@ export default function EditPlanPanel() {
           <div className="mb-3">
             <div className="mb-2 flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-medium text-[var(--text-primary)]">Subtitle export</p>
-                <p className="text-[11px] text-[var(--text-secondary)]">
+                <p className="text-xs font-medium text-[#fafafa]">Subtitle export</p>
+                <p className="text-[11px] text-[#a1a1aa]">
                   {selectedSubtitleExportMode.description}
                 </p>
               </div>
@@ -245,12 +245,12 @@ export default function EditPlanPanel() {
                     disabled={renderBusy}
                     className={`rounded-lg border px-3 py-2 text-left transition-colors ${
                       selected
-                        ? 'border-[var(--accent)] bg-[var(--accent)]/10'
-                        : 'border-[var(--border-color)] bg-[var(--bg-primary)] hover:border-[var(--accent)]/40'
+                        ? 'border-[#ffffff] bg-[#ffffff]/10'
+                        : 'border-[#27272a] bg-[#000000] hover:border-[#ffffff]/40'
                     } disabled:cursor-not-allowed disabled:opacity-50`}
                   >
-                    <p className="text-xs font-medium text-[var(--text-primary)]">{option.label}</p>
-                    <p className="mt-0.5 text-[11px] text-[var(--text-secondary)]">
+                    <p className="text-xs font-medium text-[#fafafa]">{option.label}</p>
+                    <p className="mt-0.5 text-[11px] text-[#a1a1aa]">
                       {option.description}
                     </p>
                   </button>
@@ -266,8 +266,8 @@ export default function EditPlanPanel() {
             disabled={!canPreview}
             title={!canPreview ? validationMessage ?? 'Preview is already running' : undefined}
             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
-              bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-sm font-medium
-              hover:bg-[var(--bg-tertiary)]/80
+              bg-[#18181b] text-[#fafafa] text-sm font-medium
+              hover:bg-[#18181b]/80
               disabled:opacity-40 disabled:cursor-not-allowed
               transition-colors"
           >
@@ -283,8 +283,8 @@ export default function EditPlanPanel() {
             disabled={!canRender}
             title={!canRender ? validationMessage ?? 'Render is already running' : undefined}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
-              bg-[var(--accent)] text-black text-sm font-medium
-              hover:bg-[var(--accent-hover)]
+              bg-[#ffffff] text-black text-sm font-medium
+              hover:bg-[#e4e4e7]
               disabled:opacity-40 disabled:cursor-not-allowed
               transition-colors"
           >
@@ -294,7 +294,7 @@ export default function EditPlanPanel() {
         </div>
       </div>
       {validationMessage && (
-        <div className="px-4 pb-3 text-[11px] text-[var(--text-secondary)]">
+        <div className="px-4 pb-3 text-[11px] text-[#a1a1aa]">
           {validationMessage}
         </div>
       )}

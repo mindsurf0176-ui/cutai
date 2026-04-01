@@ -1,7 +1,7 @@
 import { useApp } from '../store';
 
 function engagementColor(score: number | undefined): string {
-  if (score === undefined) return 'bg-[var(--bg-tertiary)]';
+  if (score === undefined) return 'bg-[#18181b]';
   if (score >= 0.7) return 'bg-[var(--success)]';
   if (score >= 0.4) return 'bg-[var(--warning)]';
   return 'bg-[var(--error)]';
@@ -46,19 +46,19 @@ export default function SceneTimeline() {
               title={`Scene ${scene.id}: ${formatTime(scene.start_time)} - ${formatTime(scene.end_time)}`}
             >
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10">
-                <div className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded px-2 py-1 text-xs whitespace-nowrap text-[var(--text-primary)]">
+                <div className="bg-[#000000] border border-[#27272a] rounded px-2 py-1 text-xs whitespace-nowrap text-[#fafafa]">
                   <span className="font-medium">Scene {scene.id}</span>
                   <br />
                   {formatTime(scene.start_time)} – {formatTime(scene.end_time)}
-                  {scene.is_silent && <span className="ml-1 text-xs text-[var(--text-secondary)]">silent</span>}
-                  {scene.has_speech && <span className="ml-1 text-[var(--text-secondary)]">speech</span>}
+                  {scene.is_silent && <span className="ml-1 text-xs text-[#a1a1aa]">silent</span>}
+                  {scene.has_speech && <span className="ml-1 text-[#a1a1aa]">speech</span>}
                 </div>
               </div>
             </button>
           );
         })}
       </div>
-      <div className="flex justify-between mt-1 text-[10px] text-[var(--text-secondary)]">
+      <div className="flex justify-between mt-1 text-[10px] text-[#a1a1aa]">
         <span>{analysis.scenes.length} scenes</span>
         <span>
           {Math.round(speechRatio * 100)}% speech · {Math.round(silenceRatio * 100)}% silence

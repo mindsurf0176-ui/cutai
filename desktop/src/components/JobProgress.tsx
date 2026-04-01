@@ -294,14 +294,14 @@ export default function JobProgress() {
   }[activeJob.status];
 
   const statusColor = {
-    pending: 'text-[var(--text-secondary)]',
-    running: 'text-[var(--accent)]',
+    pending: 'text-[#a1a1aa]',
+    running: 'text-[#ffffff]',
     completed: 'text-[var(--success)]',
     failed: 'text-[var(--error)]',
   }[activeJob.status];
 
   return (
-    <div className="fixed bottom-20 right-6 z-50 w-80 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-md shadow-sm overflow-hidden animate-in slide-in-from-bottom-4">
+    <div className="fixed bottom-20 right-6 z-50 w-80 bg-[#09090b] border border-[#27272a] rounded-md shadow-sm overflow-hidden animate-in slide-in-from-bottom-4">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2 min-w-0">
           <StatusIcon
@@ -312,15 +312,15 @@ export default function JobProgress() {
         </div>
         <button
           onClick={() => dispatch({ type: 'CLEAR_JOB' })}
-          className="p-1 rounded hover:bg-[var(--bg-tertiary)] transition-colors"
+          className="p-1 rounded hover:bg-[#18181b] transition-colors"
         >
-          <X size={14} className="text-[var(--text-secondary)]" />
+          <X size={14} className="text-[#a1a1aa]" />
         </button>
       </div>
 
       <div className="px-4 pb-3 space-y-3">
         <Progress.Root
-          className="relative w-full h-1.5 overflow-hidden rounded-full bg-[var(--bg-primary)]"
+          className="relative w-full h-1.5 overflow-hidden rounded-full bg-[#000000]"
           value={activeJob.progress}
         >
           <Progress.Indicator
@@ -329,14 +329,14 @@ export default function JobProgress() {
                 ? 'bg-[var(--success)]'
                 : activeJob.status === 'failed'
                   ? 'bg-[var(--error)]'
-                  : 'bg-[var(--accent)]'
+                  : 'bg-[#ffffff]'
             }`}
             style={{ width: `${activeJob.status === 'completed' ? 100 : activeJob.progress}%` }}
           />
         </Progress.Root>
 
         {activeJob.type && (
-          <p className="text-[11px] text-[var(--text-secondary)] capitalize">
+          <p className="text-[11px] text-[#a1a1aa] capitalize">
             {activeJob.type.replace('_', ' ')} job
           </p>
         )}
@@ -355,7 +355,7 @@ export default function JobProgress() {
         {hasPreviewResult && (
           <div className="space-y-2">
             {previewQualityDetails && (
-              <p className="text-xs text-[var(--text-secondary)]">
+              <p className="text-xs text-[#a1a1aa]">
                 Output: {previewQualityDetails}
               </p>
             )}
@@ -367,7 +367,7 @@ export default function JobProgress() {
                     getPreviewDownloadUrl(activeJob.job_id)
                   )
                 }
-                className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg border border-[var(--border-color)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg border border-[#27272a] text-sm font-medium text-[#fafafa] hover:bg-[#18181b] transition-colors"
               >
                 <ExternalLink size={14} />
                 {nativeDesktop ? 'Open preview' : 'Open file'}
@@ -381,7 +381,7 @@ export default function JobProgress() {
                       getPreviewDownloadUrl(activeJob.job_id)
                     )
                   }
-                  className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-[#ffffff] text-white text-sm font-medium hover:bg-[#e4e4e7] transition-colors"
                 >
                   <Download size={14} />
                   Save preview as
@@ -391,7 +391,7 @@ export default function JobProgress() {
                   href={getPreviewDownloadUrl(activeJob.job_id)}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-[#ffffff] text-white text-sm font-medium hover:bg-[#e4e4e7] transition-colors"
                 >
                   <Download size={14} />
                   Download preview
@@ -404,13 +404,13 @@ export default function JobProgress() {
         {hasRenderResult && (
           <div className="space-y-2">
             {renderQualityDetails && (
-              <p className="text-xs text-[var(--text-secondary)]">
+              <p className="text-xs text-[#a1a1aa]">
                 Output: {renderQualityDetails}
               </p>
             )}
             {renderResultData?.subtitle_path && (
               <p
-                className="truncate text-xs text-[var(--text-secondary)]"
+                className="truncate text-xs text-[#a1a1aa]"
                 title={renderResultData.subtitle_path}
               >
                 Subtitle file: {renderResultData.subtitle_path}
@@ -424,7 +424,7 @@ export default function JobProgress() {
                     getDownloadUrl(activeJob.job_id)
                   )
                 }
-                className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg border border-[var(--border-color)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg border border-[#27272a] text-sm font-medium text-[#fafafa] hover:bg-[#18181b] transition-colors"
               >
                 <ExternalLink size={14} />
                 {nativeDesktop ? 'Open render' : 'Open file'}
@@ -438,7 +438,7 @@ export default function JobProgress() {
                       getDownloadUrl(activeJob.job_id)
                     )
                   }
-                  className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-[#ffffff] text-white text-sm font-medium hover:bg-[#e4e4e7] transition-colors"
                 >
                   <Download size={14} />
                   Export render
@@ -448,7 +448,7 @@ export default function JobProgress() {
                   href={getDownloadUrl(activeJob.job_id)}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-[#ffffff] text-white text-sm font-medium hover:bg-[#e4e4e7] transition-colors"
                 >
                   <Download size={14} />
                   Download render

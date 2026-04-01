@@ -67,7 +67,7 @@ export default function Sidebar() {
                 }
               }}
               disabled={isDisabled}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors duration-150 ${isActive ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors duration-150 ${isActive ? 'bg-[#18181b] text-[#fafafa] font-medium' : 'text-[#a1a1aa] hover:bg-[#18181b] hover:text-[#fafafa]'}
                 ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
               `}
             >
@@ -79,34 +79,34 @@ export default function Sidebar() {
       </nav>
 
       {/* Divider */}
-      <div className="mx-3 border-t border-[var(--border-color)]" />
+      <div className="mx-3 border-t border-[#27272a]" />
 
       {/* Project info */}
       {state.videoInfo && (
         <div className="flex flex-col gap-3 p-4 mt-2">
-          <h4 className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+          <h4 className="text-xs font-medium text-[#a1a1aa] uppercase tracking-wider">
             Project
           </h4>
 
           <div className="flex items-start gap-2">
-            <Film size={14} className="text-[var(--text-secondary)] mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-[var(--text-primary)] break-all leading-relaxed">
+            <Film size={14} className="text-[#a1a1aa] mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-[#fafafa] break-all leading-relaxed">
               {state.videoInfo.original_name}
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-[11px]">
-            <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+            <div className="flex items-center gap-1.5 text-[#a1a1aa]">
               <Clock size={11} />
               {formatDuration(state.videoInfo.duration)}
             </div>
-            <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+            <div className="flex items-center gap-1.5 text-[#a1a1aa]">
               <Maximize size={11} />
               {state.videoInfo.width}×{state.videoInfo.height}
             </div>
           </div>
 
-          <p className="text-[10px] text-[var(--text-secondary)]">
+          <p className="text-[10px] text-[#a1a1aa]">
             {state.videoInfo.fps} fps · {formatFileSize(state.videoInfo.file_size)}
           </p>
         </div>
@@ -116,8 +116,8 @@ export default function Sidebar() {
       <div className="flex-1" />
 
       {/* Backend status */}
-      <div className="p-3 border-t border-[var(--border-color)]">
-        <div className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)]">
+      <div className="p-3 border-t border-[#27272a]">
+        <div className="flex items-center gap-2 text-[11px] text-[#a1a1aa]">
           <div className={`w-1.5 h-1.5 rounded-md ${backendDotClass}`} />
           Backend {backendLabel}
         </div>

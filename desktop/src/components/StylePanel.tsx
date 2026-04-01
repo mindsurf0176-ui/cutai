@@ -51,26 +51,26 @@ export default function StylePanel() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-3 border-b border-[var(--border-color)]">
+      <div className="px-4 py-3 border-b border-[#27272a]">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Palette size={14} />
           Style Presets
         </h3>
-        <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
+        <p className="mt-1 text-[11px] text-[#a1a1aa]">
           Use a preset as planning context, or apply it immediately as a starting plan.
         </p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">
         {state.planningStylePreset && (
-          <div className="mb-3 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2">
+          <div className="mb-3 rounded-lg border border-[#ffffff]/30 bg-[#ffffff]/10 px-3 py-2">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-medium text-[var(--text-primary)]">
+                <p className="text-xs font-medium text-[#fafafa]">
                   Planning with {state.planningStylePreset.name}
                 </p>
                 {state.planningStylePreset.description && (
-                  <p className="mt-0.5 text-[11px] text-[var(--text-secondary)]">
+                  <p className="mt-0.5 text-[11px] text-[#a1a1aa]">
                     {state.planningStylePreset.description}
                   </p>
                 )}
@@ -78,7 +78,7 @@ export default function StylePanel() {
               <button
                 type="button"
                 onClick={() => dispatch({ type: 'SET_PLANNING_STYLE_PRESET', preset: null })}
-                className="text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                className="text-[11px] text-[#a1a1aa] hover:text-[#fafafa] transition-colors"
               >
                 Clear
               </button>
@@ -93,7 +93,7 @@ export default function StylePanel() {
         )}
 
         {state.presets.length === 0 && !loadError && (
-          <div className="flex items-center justify-center h-20 text-xs text-[var(--text-secondary)]">
+          <div className="flex items-center justify-center h-20 text-xs text-[#a1a1aa]">
             <Loader2 size={16} className="animate-spin mr-2" />
             Loading presets...
           </div>
@@ -112,8 +112,8 @@ export default function StylePanel() {
                   rounded-lg border px-3 py-3 text-left
                   transition-all duration-200
                   ${isSelectedForPlanning || isApplied
-                    ? 'bg-[var(--accent)]/15 border-[var(--accent)]/30'
-                    : 'bg-[var(--bg-tertiary)]/50 border-transparent hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-color)]'
+                    ? 'bg-[#ffffff]/15 border-[#ffffff]/30'
+                    : 'bg-[#18181b]/50 border-transparent hover:bg-[#18181b] hover:border-[#27272a]'
                   }
                 `}
               >
@@ -121,17 +121,17 @@ export default function StylePanel() {
                   <div
                     className={`
                     mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md
-                    ${isApplied || isSelectedForPlanning ? 'bg-[var(--accent)]' : 'bg-[var(--bg-primary)]'}
+                    ${isApplied || isSelectedForPlanning ? 'bg-[#ffffff]' : 'bg-[#000000]'}
                   `}
                   >
                     {isApplying ? (
-                      <Loader2 size={14} className="animate-spin text-[var(--accent)]" />
+                      <Loader2 size={14} className="animate-spin text-[#ffffff]" />
                     ) : isApplied ? (
                       <Check size={14} className="text-white" />
                     ) : (
                       <Palette
                         size={14}
-                        className={isSelectedForPlanning ? 'text-white' : 'text-[var(--text-secondary)]'}
+                        className={isSelectedForPlanning ? 'text-white' : 'text-[#a1a1aa]'}
                       />
                     )}
                   </div>
@@ -139,18 +139,18 @@ export default function StylePanel() {
                     <div className="flex items-center gap-2">
                       <p className="text-xs font-medium capitalize">{preset.name}</p>
                       {isSelectedForPlanning && (
-                        <span className="rounded-full bg-[var(--accent)]/15 px-2 py-0.5 text-[10px] font-medium text-[var(--accent)]">
+                        <span className="rounded-full bg-[#ffffff]/15 px-2 py-0.5 text-[10px] font-medium text-[#ffffff]">
                           Planning
                         </span>
                       )}
                       {isApplied && !isSelectedForPlanning && (
-                        <span className="rounded-full bg-[var(--accent)]/15 px-2 py-0.5 text-[10px] font-medium text-[var(--accent)]">
+                        <span className="rounded-full bg-[#ffffff]/15 px-2 py-0.5 text-[10px] font-medium text-[#ffffff]">
                           Applied
                         </span>
                       )}
                     </div>
                     {preset.description && (
-                      <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
+                      <p className="mt-1 text-[11px] text-[#a1a1aa]">
                         {preset.description}
                       </p>
                     )}
@@ -164,8 +164,8 @@ export default function StylePanel() {
                     disabled={isApplying}
                     className={`rounded-md px-3 py-1.5 text-[11px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                       isSelectedForPlanning
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--bg-primary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+                        ? 'bg-[#ffffff] text-white'
+                        : 'bg-[#000000] text-[#fafafa] hover:bg-[#18181b]'
                     }`}
                   >
                     {isSelectedForPlanning ? 'Used for planning' : 'Use for planning'}
@@ -174,7 +174,7 @@ export default function StylePanel() {
                     type="button"
                     onClick={() => handleApply(preset.name)}
                     disabled={!state.videoId || isApplying}
-                    className="rounded-md px-3 py-1.5 text-[11px] font-medium text-[var(--text-secondary)] bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="rounded-md px-3 py-1.5 text-[11px] font-medium text-[#a1a1aa] bg-[#000000] hover:bg-[#18181b] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     {isApplying ? 'Applying…' : 'Apply now'}
                   </button>

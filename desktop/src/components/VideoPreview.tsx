@@ -546,7 +546,7 @@ export default function VideoPreview() {
       );
     }
 
-    return <div className="text-[var(--text-secondary)] text-sm">Loading preview...</div>;
+    return <div className="text-[#a1a1aa] text-sm">Loading preview...</div>;
   }
 
   function renderMediaActions(mode: Exclude<DisplayMode, 'source'>) {
@@ -561,7 +561,7 @@ export default function VideoPreview() {
       <>
         <button
           onClick={() => void openPathOrUrl(media.output_path, videoUrl)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-3 py-2 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-[#27272a] px-3 py-2 text-xs text-[#fafafa] hover:bg-[#18181b] transition-colors"
         >
           <ExternalLink size={13} />
           {nativeDesktop ? `Open ${mode}` : `Open ${mode}`}
@@ -569,7 +569,7 @@ export default function VideoPreview() {
         {nativeDesktop ? (
           <button
             onClick={() => void handleExport(mode)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-medium text-white hover:bg-[var(--accent-hover)] transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#ffffff] px-3 py-2 text-xs font-medium text-white hover:bg-[#e4e4e7] transition-colors"
           >
             <Download size={13} />
             {mode === 'render' ? 'Export render' : 'Save preview as'}
@@ -579,7 +579,7 @@ export default function VideoPreview() {
             href={downloadUrl ?? undefined}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-medium text-white hover:bg-[var(--accent-hover)] transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#ffffff] px-3 py-2 text-xs font-medium text-white hover:bg-[#e4e4e7] transition-colors"
           >
             <Download size={13} />
             {`Download ${mode}`}
@@ -622,7 +622,7 @@ export default function VideoPreview() {
 
   if (!videoId || !videoInfo) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--text-secondary)]">
+      <div className="flex items-center justify-center h-full text-[#a1a1aa]">
         <p>No video loaded</p>
       </div>
     );
@@ -631,32 +631,32 @@ export default function VideoPreview() {
   return (
     <div className="flex flex-col h-full gap-3">
       {(hasPreview || hasRender) && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-[#27272a] bg-[#09090b] px-3 py-2">
           <div className="min-w-0">
             <p className="text-sm font-medium">
               {displayMode === 'render' ? 'Render ready' : displayMode === 'preview' ? 'Preview ready' : 'Source frames'}
             </p>
             {displayMode === 'preview' && previewResult ? (
-              <p className="text-xs text-[var(--text-secondary)]">
+              <p className="text-xs text-[#a1a1aa]">
                 {previewResult.resolution ?? 360}p low-resolution playback
               </p>
             ) : displayMode === 'render' ? (
-              <p className="text-xs text-[var(--text-secondary)]">
+              <p className="text-xs text-[#a1a1aa]">
                 {renderQualityDetails ? `Output: ${renderQualityDetails}` : 'Full render playback'}
               </p>
             ) : (
-              <p className="text-xs text-[var(--text-secondary)]">Choose preview or render for playback</p>
+              <p className="text-xs text-[#a1a1aa]">Choose preview or render for playback</p>
             )}
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
-            <div className="inline-flex rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] p-1">
+            <div className="inline-flex rounded-lg border border-[#27272a] bg-[#000000] p-1">
               <button
                 type="button"
                 onClick={() => selectDisplayMode('source')}
                 className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                   displayMode === 'source' && !compareEnabled
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    ? 'bg-[#ffffff] text-white'
+                    : 'text-[#a1a1aa] hover:text-[#fafafa]'
                 }`}
               >
                 Source
@@ -667,8 +667,8 @@ export default function VideoPreview() {
                   onClick={() => selectDisplayMode('preview')}
                   className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                     displayMode === 'preview' && !compareEnabled
-                      ? 'bg-[var(--accent)] text-white'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      ? 'bg-[#ffffff] text-white'
+                      : 'text-[#a1a1aa] hover:text-[#fafafa]'
                   }`}
                 >
                   Preview
@@ -680,8 +680,8 @@ export default function VideoPreview() {
                   onClick={() => selectDisplayMode('render')}
                   className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                     displayMode === 'render' && !compareEnabled
-                      ? 'bg-[var(--accent)] text-white'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      ? 'bg-[#ffffff] text-white'
+                      : 'text-[#a1a1aa] hover:text-[#fafafa]'
                   }`}
                 >
                   Render
@@ -689,14 +689,14 @@ export default function VideoPreview() {
               )}
             </div>
             {compareOptions.length > 0 && (
-              <div className="inline-flex rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] p-1">
+              <div className="inline-flex rounded-lg border border-[#27272a] bg-[#000000] p-1">
                 <button
                   type="button"
                   onClick={() => setCompareMode('off')}
                   className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                     !compareEnabled
-                      ? 'bg-[var(--accent)] text-white'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      ? 'bg-[#ffffff] text-white'
+                      : 'text-[#a1a1aa] hover:text-[#fafafa]'
                   }`}
                 >
                   Single view
@@ -708,8 +708,8 @@ export default function VideoPreview() {
                     onClick={() => setCompareMode(option.value)}
                     className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                       compareMode === option.value
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        ? 'bg-[#ffffff] text-white'
+                        : 'text-[#a1a1aa] hover:text-[#fafafa]'
                     }`}
                   >
                     {option.label}
@@ -727,7 +727,7 @@ export default function VideoPreview() {
                 <>
                   <button
                     onClick={() => void openPathOrUrl(currentMedia.output_path, currentVideoUrl)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-3 py-2 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#27272a] px-3 py-2 text-xs text-[#fafafa] hover:bg-[#18181b] transition-colors"
                   >
                     <ExternalLink size={13} />
                     {nativeDesktop
@@ -739,7 +739,7 @@ export default function VideoPreview() {
                   {nativeDesktop ? (
                     <button
                       onClick={() => void handleExport(currentMediaKind)}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-medium text-white hover:bg-[var(--accent-hover)] transition-colors"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#ffffff] px-3 py-2 text-xs font-medium text-white hover:bg-[#e4e4e7] transition-colors"
                     >
                       <Download size={13} />
                       {displayMode === 'render' ? 'Export render' : 'Save preview as'}
@@ -749,7 +749,7 @@ export default function VideoPreview() {
                       href={currentDownloadUrl ?? undefined}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-medium text-white hover:bg-[var(--accent-hover)] transition-colors"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#ffffff] px-3 py-2 text-xs font-medium text-white hover:bg-[#e4e4e7] transition-colors"
                     >
                       <Download size={13} />
                       Download
@@ -825,7 +825,7 @@ export default function VideoPreview() {
         )}
 
         {/* Video info badge */}
-        <div className="absolute top-3 right-3 rounded-md bg-black/60 px-2 py-1 text-xs text-[var(--text-secondary)] ">
+        <div className="absolute top-3 right-3 rounded-md bg-black/60 px-2 py-1 text-xs text-[#a1a1aa] ">
           {compareEnabled
             ? compareMode === 'preview-render'
               ? 'Preview / Render'
@@ -846,7 +846,7 @@ export default function VideoPreview() {
       {/* Timeline controls */}
       <div className="flex items-center gap-3 px-2">
         <div
-          className="w-8 h-8 rounded-md bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)]"
+          className="w-8 h-8 rounded-md bg-[#18181b] flex items-center justify-center text-[#a1a1aa]"
           aria-label={
             displayMode === 'render'
               ? 'Render playback active'
@@ -867,7 +867,7 @@ export default function VideoPreview() {
             : <GripHorizontal size={14} />}
         </div>
 
-        <span className="text-xs text-[var(--text-secondary)] w-12 text-right tabular-nums">
+        <span className="text-xs text-[#a1a1aa] w-12 text-right tabular-nums">
           {formatTime(currentTime)}
         </span>
 
@@ -878,13 +878,13 @@ export default function VideoPreview() {
           step={0.1}
           onValueChange={([val]) => dispatch({ type: 'SET_CURRENT_TIME', time: val })}
         >
-          <Slider.Track className="relative h-1 flex-1 rounded-md bg-[var(--bg-tertiary)]">
-            <Slider.Range className="absolute h-full rounded-md bg-[var(--accent)]" />
+          <Slider.Track className="relative h-1 flex-1 rounded-md bg-[#18181b]">
+            <Slider.Range className="absolute h-full rounded-md bg-[#ffffff]" />
           </Slider.Track>
-          <Slider.Thumb className="block w-3 h-3 rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 transition-colors cursor-pointer" />
+          <Slider.Thumb className="block w-3 h-3 rounded-md bg-[#ffffff] hover:bg-[#e4e4e7] focus:outline-none focus:ring-2 focus:ring-[#ffffff]/50 transition-colors cursor-pointer" />
         </Slider.Root>
 
-        <span className="text-xs text-[var(--text-secondary)] w-12 tabular-nums">
+        <span className="text-xs text-[#a1a1aa] w-12 tabular-nums">
           {formatTime(videoInfo.duration)}
         </span>
 
@@ -898,8 +898,8 @@ export default function VideoPreview() {
             onTouchEnd={() => setCompareSource(false)}
             className={`rounded-md border px-2 py-1 text-[11px] font-medium transition-colors ${
               compareSource
-                ? 'border-[var(--accent)] text-[var(--accent)]'
-                : 'border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                ? 'border-[#ffffff] text-[#ffffff]'
+                : 'border-[#27272a] text-[#a1a1aa] hover:text-[#fafafa]'
             }`}
             title="Hold to compare with source frames"
           >
@@ -909,14 +909,14 @@ export default function VideoPreview() {
       </div>
 
       {recentOutputs.length > 0 && selectedRecentOutput && (
-        <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-3">
+        <div className="rounded-lg border border-[#27272a] bg-[#09090b] px-3 py-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0 space-y-1">
-              <div className="inline-flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
-                <History size={15} className="text-[var(--text-secondary)]" />
+              <div className="inline-flex items-center gap-2 text-sm font-medium text-[#fafafa]">
+                <History size={15} className="text-[#a1a1aa]" />
                 <span>Recent outputs</span>
               </div>
-              <p className="text-xs text-[var(--text-secondary)]">
+              <p className="text-xs text-[#a1a1aa]">
                 Select an exported preview or render to open, reveal, or save a copy.
               </p>
             </div>
@@ -926,7 +926,7 @@ export default function VideoPreview() {
                 type="button"
                 onClick={() => void handleRecentOutputRerun(selectedRecentOutput)}
                 disabled={rerunStarting !== null}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-3 py-2 text-xs font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#27272a] px-3 py-2 text-xs font-medium text-[#fafafa] transition-colors hover:bg-[#18181b] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RotateCcw size={13} className={rerunStarting ? 'animate-spin' : undefined} />
                 {rerunLabel}
@@ -937,7 +937,7 @@ export default function VideoPreview() {
                   selectedRecentOutput.output_path,
                   getRecentOutputUrls(selectedRecentOutput).videoUrl
                 )}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-3 py-2 text-xs font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#27272a] px-3 py-2 text-xs font-medium text-[#fafafa] transition-colors hover:bg-[#18181b]"
               >
                 <ExternalLink size={13} />
                 Open selected
@@ -946,7 +946,7 @@ export default function VideoPreview() {
                 <button
                   type="button"
                   onClick={() => void revealPathOrUrl(selectedRecentOutput.output_path)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-3 py-2 text-xs font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#27272a] px-3 py-2 text-xs font-medium text-[#fafafa] transition-colors hover:bg-[#18181b]"
                 >
                   <FolderOpen size={13} />
                   Reveal selected
@@ -955,7 +955,7 @@ export default function VideoPreview() {
               <button
                 type="button"
                 onClick={() => void handleRecentOutputExport(selectedRecentOutput)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-[var(--accent-hover)]"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#ffffff] px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-[#e4e4e7]"
               >
                 <Download size={13} />
                 {nativeDesktop ? 'Export selected' : 'Download selected'}
@@ -974,16 +974,16 @@ export default function VideoPreview() {
                   onClick={() => handleRecentOutputSelection(item)}
                   className={`min-w-0 shrink-0 rounded-lg border px-3 py-2 text-left transition-colors ${
                     selected
-                      ? 'border-[var(--accent)] bg-[var(--accent)]/10'
-                      : 'border-[var(--border-color)] bg-[var(--bg-primary)] hover:border-[var(--accent)]/40 hover:bg-[var(--bg-tertiary)]'
+                      ? 'border-[#ffffff] bg-[#ffffff]/10'
+                      : 'border-[#27272a] bg-[#000000] hover:border-[#ffffff]/40 hover:bg-[#18181b]'
                   }`}
                   aria-pressed={selected}
                   title={getRecentOutputTitle(item)}
                 >
-                  <div className="text-xs font-medium text-[var(--text-primary)]">
+                  <div className="text-xs font-medium text-[#fafafa]">
                     {getRecentOutputLabel(item)}
                   </div>
-                  <div className="max-w-44 truncate text-[11px] text-[var(--text-secondary)]">
+                  <div className="max-w-44 truncate text-[11px] text-[#a1a1aa]">
                     {item.original_name ?? (item.output_path.split(/[\\/]/).pop() ?? item.output_path)}
                   </div>
                 </button>
@@ -991,7 +991,7 @@ export default function VideoPreview() {
             })}
           </div>
 
-          <div className="mt-3 flex flex-col gap-1 text-[11px] text-[var(--text-secondary)] sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-3 flex flex-col gap-1 text-[11px] text-[#a1a1aa] sm:flex-row sm:items-center sm:justify-between">
             <p className="truncate" title={selectedRecentOutput.output_path}>
               {selectedRecentOutput.output_path}
             </p>
@@ -1001,7 +1001,7 @@ export default function VideoPreview() {
           </div>
 
           {selectedRecentOutput.subtitle_path && (
-            <div className="mt-1 flex flex-col gap-1 text-[11px] text-[var(--text-secondary)] sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-1 flex flex-col gap-1 text-[11px] text-[#a1a1aa] sm:flex-row sm:items-center sm:justify-between">
               <p className="truncate" title={selectedRecentOutput.subtitle_path}>
                 Subtitle file: {selectedRecentOutput.subtitle_path}
               </p>
@@ -1019,7 +1019,7 @@ export default function VideoPreview() {
                 </p>
               ) : null}
               {recentOutputMessage || selectedRecentOutputIssue ? (
-                <p className="text-[var(--text-secondary)]">
+                <p className="text-[#a1a1aa]">
                   {recentOutputMessage ?? selectedRecentOutputIssue}
                 </p>
               ) : null}

@@ -55,24 +55,24 @@ export default function InstructionBar() {
   };
 
   return (
-    <div className="border-t border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3">
+    <div className="border-t border-[#27272a] bg-[#09090b] px-4 py-3">
       {selectedStylePreset && state.videoId && (
-        <div className="mb-3 flex items-start justify-between gap-3 rounded-lg border border-[var(--accent)]/25 bg-[var(--accent)]/10 px-3 py-2">
+        <div className="mb-3 flex items-start justify-between gap-3 rounded-lg border border-[#ffffff]/25 bg-[#ffffff]/10 px-3 py-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Wand2 size={12} className="text-[var(--accent)]" />
-              <span className="text-xs font-medium text-[var(--text-primary)]">
+              <Wand2 size={12} className="text-[#ffffff]" />
+              <span className="text-xs font-medium text-[#fafafa]">
                 Planning with {selectedStylePreset.name}
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
+            <p className="mt-1 text-[11px] text-[#a1a1aa]">
               New instructions use this preset as context instead of only applying it immediately.
             </p>
           </div>
           <button
             type="button"
             onClick={() => dispatch({ type: 'SET_PLANNING_STYLE_PRESET', preset: null })}
-            className="rounded-md p-1 text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--text-primary)] transition-colors"
+            className="rounded-md p-1 text-[#a1a1aa] hover:bg-[#ffffff]/10 hover:text-[#fafafa] transition-colors"
             aria-label="Clear planning style"
           >
             <X size={12} />
@@ -89,8 +89,8 @@ export default function InstructionBar() {
               onClick={() => handleSubmit(preset)}
               disabled={disabled}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md
-                bg-[var(--bg-tertiary)] text-[var(--text-secondary)]
-                hover:bg-[var(--accent)]/20 hover:text-[var(--accent)]
+                bg-[#18181b] text-[#a1a1aa]
+                hover:bg-[#ffffff]/20 hover:text-[#ffffff]
                 disabled:opacity-40 disabled:cursor-not-allowed
                 transition-colors"
             >
@@ -103,13 +103,13 @@ export default function InstructionBar() {
 
       {/* Plan summary */}
       {state.editPlan && (
-        <div className="mb-2 px-3 py-2 rounded-lg bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-xs text-[var(--text-secondary)]">
-          <span className="text-[var(--accent)] font-medium">Plan:</span>{' '}
+        <div className="mb-2 px-3 py-2 rounded-lg bg-[#ffffff]/10 border border-[#ffffff]/20 text-xs text-[#a1a1aa]">
+          <span className="text-[#ffffff] font-medium">Plan:</span>{' '}
           {state.editPlan.summary}
           {selectedStylePreset && (
             <>
               {' '}
-              <span className="text-[var(--accent)] font-medium">Style context:</span>{' '}
+              <span className="text-[#ffffff] font-medium">Style context:</span>{' '}
               {selectedStylePreset.name}
             </>
           )}
@@ -130,9 +130,9 @@ export default function InstructionBar() {
               : 'Upload a video first to start editing'
           }
           disabled={disabled}
-          className="flex-1 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-sm
-            text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/50
-            focus:outline-none focus:border-[var(--accent)]
+          className="flex-1 bg-[#000000] border border-[#27272a] rounded-lg px-4 py-2.5 text-sm
+            text-[#fafafa] placeholder:text-[#a1a1aa]/50
+            focus:outline-none focus:border-[#ffffff]
             disabled:opacity-40 disabled:cursor-not-allowed
             transition-colors"
         />
@@ -140,9 +140,9 @@ export default function InstructionBar() {
           type="submit"
           disabled={disabled || !instruction.trim()}
           title={isRefiningPlan ? 'Rebuild the plan with this refinement' : 'Create plan'}
-          className="w-10 h-10 rounded-lg bg-[var(--accent)] text-white
+          className="w-10 h-10 rounded-lg bg-[#ffffff] text-white
             flex items-center justify-center
-            hover:bg-[var(--accent-hover)]
+            hover:bg-[#e4e4e7]
             disabled:opacity-40 disabled:cursor-not-allowed
             transition-colors"
         >

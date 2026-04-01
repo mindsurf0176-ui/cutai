@@ -53,17 +53,17 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
       </div>
 
       {state.sidebarTab === 'edit' && state.editPlan && (
-        <div className="w-72 border-l border-[var(--border-color)] bg-[var(--bg-secondary)]">
+        <div className="w-72 border-l border-[#27272a] bg-[#09090b]">
           <EditPlanPanel />
         </div>
       )}
       {state.sidebarTab === 'style' && (
-        <div className="w-72 border-l border-[var(--border-color)] bg-[var(--bg-secondary)]">
+        <div className="w-72 border-l border-[#27272a] bg-[#09090b]">
           <StylePanel />
         </div>
       )}
       {state.sidebarTab === 'highlights' && (
-        <div className="w-72 border-l border-[var(--border-color)] bg-[var(--bg-secondary)]">
+        <div className="w-72 border-l border-[#27272a] bg-[#09090b]">
           <HighlightsPanel />
         </div>
       )}
@@ -188,14 +188,14 @@ export default function App() {
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>
-      <div className="flex flex-col h-screen w-screen bg-[var(--bg-primary)]">
-        <header className="flex items-center justify-between px-4 h-12 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] flex-shrink-0">
+      <div className="flex flex-col h-screen w-screen bg-[#000000]">
+        <header className="flex items-center justify-between px-4 h-12 bg-[#09090b] border-b border-[#27272a] flex-shrink-0">
           <div className="flex items-center gap-2">
-            <Clapperboard size={18} className="text-[var(--accent)]" />
+            <Clapperboard size={18} className="text-[#ffffff]" />
             <span className="text-sm font-semibold tracking-tight">CutAI</span>
           </div>
-          <button className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors">
-            <Settings size={16} className="text-[var(--text-secondary)]" />
+          <button className="p-2 rounded-lg hover:bg-[#18181b] transition-colors">
+            <Settings size={16} className="text-[#a1a1aa]" />
           </button>
         </header>
 
