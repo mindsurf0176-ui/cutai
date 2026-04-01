@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Send, Scissors, Subtitles, Clapperboard, Wand2, X } from 'lucide-react';
 import { useApp } from '../store';

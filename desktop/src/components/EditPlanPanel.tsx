@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Scissors,
   Subtitles,
@@ -107,7 +109,7 @@ export default function EditPlanPanel() {
           className="text-xs text-[#a1a1aa] hover:text-[var(--error)] transition-colors"
         >
           Clear
-        </button>
+        </Button>
       </div>
 
       <div className="px-4 py-3 text-xs text-[#a1a1aa] border-b border-[#27272a]">
@@ -146,7 +148,7 @@ export default function EditPlanPanel() {
                 className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-[var(--error)]/20 transition-all"
               >
                 <Trash2 size={12} className="text-[var(--error)]" />
-              </button>
+              </Button>
             </div>
           );
         })}
@@ -182,7 +184,7 @@ export default function EditPlanPanel() {
                   } disabled:cursor-not-allowed disabled:opacity-50`}
                 >
                   {resolution}p
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -213,7 +215,7 @@ export default function EditPlanPanel() {
                     } disabled:cursor-not-allowed disabled:opacity-50`}
                   >
                     {preset.label}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -253,7 +255,7 @@ export default function EditPlanPanel() {
                     <p className="mt-0.5 text-[11px] text-[#a1a1aa]">
                       {option.description}
                     </p>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -277,7 +279,7 @@ export default function EditPlanPanel() {
               : previewResult
                 ? `Refresh ${previewResolution}p`
                 : `Preview ${previewResolution}p`}
-          </button>
+          </Button>
           <button
             onClick={handleRender}
             disabled={!canRender}
@@ -290,7 +292,7 @@ export default function EditPlanPanel() {
           >
             <Download size={14} />
             {renderBusy ? `Rendering ${selectedRenderPreset.label}` : `Render ${selectedRenderPreset.label}`}
-          </button>
+          </Button>
         </div>
       </div>
       {validationMessage && (
