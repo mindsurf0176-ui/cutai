@@ -1,37 +1,12 @@
 @import "tailwindcss";
 
-/* 
-  World-Class Ultra-Minimalist Linear/Vercel Theme
-*/
 :root {
-  /* Core Backgrounds */
-  --bg-primary: #000000;       /* Pure black */
-  --bg-secondary: #0A0A0A;     /* Zinc 950 panels */
-  --bg-tertiary: #18181B;      /* Zinc 900 borders/hover states */
-  
-  /* Text Colors */
-  --text-primary: #EDEDED;     /* Clean off-white */
-  --text-secondary: #A1A1AA;   /* Zinc 400 */
-  --text-tertiary: #52525B;    /* Zinc 600 disabled */
-  
-  /* Solid, subdued Accent */
-  --accent: #E2E8F0;           /* Clean solid white/gray */
-  --accent-hover: #FFFFFF;     
-  
-  /* Status Colors */
-  --success: #10B981;          /* Flat Emerald */
-  --warning: #F59E0B;          /* Flat Amber */
-  --error: #EF4444;            /* Flat Red */
-  
-  /* UI Elements */
-  --border-color: #27272A;     /* Zinc 800 - Crisp, thin borders */
-  --panel-radius: 8px;
-  --button-radius: 6px;
+  color-scheme: dark;
 }
 
 body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background-color: #000000;
+  color: #fafafa;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   margin: 0;
   overflow: hidden;
@@ -48,40 +23,30 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
+  background: #27272a;
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-tertiary);
+  background: #52525b;
 }
 
-/* Base tailwind elements */
-@layer utilities {
-  .linear-panel {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--panel-radius);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+/* Animations */
+@keyframes slide-in-from-bottom-4 {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
   }
-  .linear-button {
-    background-color: var(--text-primary);
-    color: var(--bg-primary);
-    border-radius: var(--button-radius);
-    font-weight: 500;
-    transition: all 0.2s ease;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  .linear-button:hover {
-    background-color: var(--accent-hover);
-  }
-  .linear-input {
-    background-color: transparent;
-    border: 1px solid var(--border-color);
-    border-radius: var(--button-radius);
-    color: var(--text-primary);
-    transition: border-color 0.2s ease;
-  }
-  .linear-input:focus {
-    border-color: var(--text-secondary);
-    outline: none;
-  }
+}
+
+.animate-in {
+  animation: slide-in-from-bottom-4 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+::selection {
+  background: #3f3f46;
+  color: white;
 }
