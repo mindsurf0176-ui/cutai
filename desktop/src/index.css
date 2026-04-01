@@ -14,7 +14,7 @@
   --text-secondary: #A1A1AA;   /* Zinc 400 */
   --text-tertiary: #52525B;    /* Zinc 600 disabled */
   
-  /* Solid, subdued Accent (Vercel blue / Linear indigo) */
+  /* Solid, subdued Accent */
   --accent: #E2E8F0;           /* Clean solid white/gray */
   --accent-hover: #FFFFFF;     
   
@@ -55,24 +55,33 @@ body {
   background: var(--text-tertiary);
 }
 
-/* Animations */
-@keyframes slide-in-from-bottom-4 {
-  from {
-    opacity: 0;
-    transform: translateY(1rem);
+/* Base tailwind elements */
+@layer utilities {
+  .linear-panel {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--panel-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .linear-button {
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    border-radius: var(--button-radius);
+    font-weight: 500;
+    transition: all 0.2s ease;
   }
-}
-
-.animate-in {
-  animation: slide-in-from-bottom-4 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Custom Selection */
-::selection {
-  background: #3F3F46;
-  color: white;
+  .linear-button:hover {
+    background-color: var(--accent-hover);
+  }
+  .linear-input {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--button-radius);
+    color: var(--text-primary);
+    transition: border-color 0.2s ease;
+  }
+  .linear-input:focus {
+    border-color: var(--text-secondary);
+    outline: none;
+  }
 }

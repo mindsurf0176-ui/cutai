@@ -123,11 +123,11 @@ export default function DropZone() {
               Uploading {selectedFile?.name}...
             </p>
             <Progress.Root
-              className="relative w-full h-2 overflow-hidden rounded-full bg-[var(--bg-primary)]"
+              className="relative w-full h-2 overflow-hidden rounded-md bg-[var(--bg-primary)]"
               value={state.uploadProgress}
             >
               <Progress.Indicator
-                className="h-full bg-[var(--accent)] transition-[width] duration-300 ease-out rounded-full"
+                className="h-full bg-[var(--accent)] transition-[width] duration-300 ease-out rounded-md"
                 style={{ width: `${state.uploadProgress}%` }}
               />
             </Progress.Root>

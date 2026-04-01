@@ -124,7 +124,7 @@ export default function Sidebar() {
       {/* Backend status */}
       <div className="p-3 border-t border-[var(--border-color)]">
         <div className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)]">
-          <div className={`w-1.5 h-1.5 rounded-full ${backendDotClass}`} />
+          <div className={`w-1.5 h-1.5 rounded-md ${backendDotClass}`} />
           Backend {backendLabel}
         </div>
       </div>

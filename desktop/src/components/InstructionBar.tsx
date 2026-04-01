@@ -88,7 +88,7 @@ export default function InstructionBar() {
               key={label}
               onClick={() => handleSubmit(preset)}
               disabled={disabled}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md
                 bg-[var(--bg-tertiary)] text-[var(--text-secondary)]
                 hover:bg-[var(--accent)]/20 hover:text-[var(--accent)]
                 disabled:opacity-40 disabled:cursor-not-allowed
@@ -147,7 +147,7 @@ export default function InstructionBar() {
             transition-colors"
         >
           {loading ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-md animate-spin" />
           ) : (
             <Send size={16} />
           )}

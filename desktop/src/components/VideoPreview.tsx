@@ -783,7 +783,7 @@ export default function VideoPreview() {
                 className="relative flex min-h-0 items-center justify-center border-b border-white/10 last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0"
               >
                 {renderMediaPane(pane.mode)}
-                <div className="absolute left-3 top-3 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
+                <div className="absolute left-3 top-3 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white ">
                   {pane.label}
                 </div>
               </div>
@@ -795,7 +795,7 @@ export default function VideoPreview() {
 
         {/* Preview mode overlay */}
         <div className="absolute inset-x-0 bottom-3 flex justify-center pointer-events-none">
-          <div className="inline-flex items-center gap-2 rounded-full bg-black/65 px-3 py-1.5 text-xs text-white backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-md bg-black/65 px-3 py-1.5 text-xs text-white ">
             {compareEnabled || effectiveMode === 'preview' || effectiveMode === 'render'
               ? <PlayCircle size={14} />
               : <GripHorizontal size={14} />}
@@ -817,7 +817,7 @@ export default function VideoPreview() {
 
         {currentBusy && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <div className="inline-flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-sm text-white">
+            <div className="inline-flex items-center gap-2 rounded-md bg-black/70 px-4 py-2 text-sm text-white">
               <Loader2 size={14} className="animate-spin" />
               {displayMode === 'render' ? 'Rendering video' : 'Generating preview'}
             </div>
@@ -825,7 +825,7 @@ export default function VideoPreview() {
         )}
 
         {/* Video info badge */}
-        <div className="absolute top-3 right-3 rounded-md bg-black/60 px-2 py-1 text-xs text-[var(--text-secondary)] backdrop-blur-sm">
+        <div className="absolute top-3 right-3 rounded-md bg-black/60 px-2 py-1 text-xs text-[var(--text-secondary)] ">
           {compareEnabled
             ? compareMode === 'preview-render'
               ? 'Preview / Render'
@@ -846,7 +846,7 @@ export default function VideoPreview() {
       {/* Timeline controls */}
       <div className="flex items-center gap-3 px-2">
         <div
-          className="w-8 h-8 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)]"
+          className="w-8 h-8 rounded-md bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)]"
           aria-label={
             displayMode === 'render'
               ? 'Render playback active'
@@ -878,10 +878,10 @@ export default function VideoPreview() {
           step={0.1}
           onValueChange={([val]) => dispatch({ type: 'SET_CURRENT_TIME', time: val })}
         >
-          <Slider.Track className="relative h-1 flex-1 rounded-full bg-[var(--bg-tertiary)]">
-            <Slider.Range className="absolute h-full rounded-full bg-[var(--accent)]" />
+          <Slider.Track className="relative h-1 flex-1 rounded-md bg-[var(--bg-tertiary)]">
+            <Slider.Range className="absolute h-full rounded-md bg-[var(--accent)]" />
           </Slider.Track>
-          <Slider.Thumb className="block w-3 h-3 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 transition-colors cursor-pointer" />
+          <Slider.Thumb className="block w-3 h-3 rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 transition-colors cursor-pointer" />
         </Slider.Root>
 
         <span className="text-xs text-[var(--text-secondary)] w-12 tabular-nums">
