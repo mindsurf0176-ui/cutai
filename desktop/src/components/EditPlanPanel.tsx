@@ -145,7 +145,7 @@ export default function EditPlanPanel() {
                   </p>
                 )}
               </div>
-              <button
+              <Button
                 onClick={() => dispatch({ type: 'REMOVE_OPERATION', index })}
                 className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-[var(--error)]/20 transition-all"
               >
@@ -174,7 +174,7 @@ export default function EditPlanPanel() {
               const selected = previewResolution === resolution;
 
               return (
-                <button
+                <Button
                   key={resolution}
                   type="button"
                   onClick={() => dispatch({ type: 'SET_PREVIEW_RESOLUTION', resolution })}
@@ -205,7 +205,7 @@ export default function EditPlanPanel() {
                 const selected = renderPreset === preset.value;
 
                 return (
-                  <button
+                  <Button
                     key={preset.value}
                     type="button"
                     onClick={() => dispatch({ type: 'SET_RENDER_PRESET', renderPreset: preset.value })}
@@ -239,7 +239,7 @@ export default function EditPlanPanel() {
                 const selected = subtitleExportMode === option.value;
 
                 return (
-                  <button
+                  <Button
                     key={option.value}
                     type="button"
                     onClick={() => dispatch({
@@ -265,7 +265,7 @@ export default function EditPlanPanel() {
         )}
 
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={handlePreview}
             disabled={!canPreview}
             title={!canPreview ? validationMessage ?? 'Preview is already running' : undefined}
@@ -282,7 +282,7 @@ export default function EditPlanPanel() {
                 ? `Refresh ${previewResolution}p`
                 : `Preview ${previewResolution}p`}
           </Button>
-          <button
+          <Button
             onClick={handleRender}
             disabled={!canRender}
             title={!canRender ? validationMessage ?? 'Render is already running' : undefined}
