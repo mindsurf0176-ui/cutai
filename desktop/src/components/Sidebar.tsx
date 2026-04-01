@@ -46,7 +46,7 @@ export default function Sidebar() {
         : 'bg-[var(--error)]';
 
   return (
-    <aside className="flex flex-col w-64 bg-black border-r border-zinc-800 h-full">
+    <aside className="flex flex-col w-64 bg-black border-r border-[#27272a]/70 h-full">
       {/* Tab navigation */}
       <nav className="flex flex-col gap-1 p-3">
         {TABS.map(({ id, label, icon: Icon }) => {
@@ -67,7 +67,7 @@ export default function Sidebar() {
                 }
               }}
               disabled={isDisabled}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors duration-150 ${isActive ? 'bg-[#18181b] text-[#fafafa] font-medium' : 'text-[#a1a1aa] hover:bg-[#18181b] hover:text-[#fafafa]'}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-200 ease-out ${isActive ? 'bg-[#18181b] text-white font-medium shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]' : 'text-[#a1a1aa] hover:bg-[#18181b] hover:text-[#fafafa]'}
                 ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
               `}
             >
