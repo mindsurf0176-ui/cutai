@@ -94,7 +94,7 @@ export default function DropZone() {
           flex flex-col items-center justify-center w-full h-full cursor-pointer
           transition-all duration-200 group
           ${dragging
-            ? 'bg-white/[0.02]'
+            ? 'bg-white/[0.03]'
             : ''
           }
         `}
@@ -134,12 +134,12 @@ export default function DropZone() {
           </div>
         ) : (
           <div className="flex flex-col items-center gap-5">
-            <div className="w-12 h-12 rounded-xl bg-white/[0.04] flex items-center justify-center transition-all duration-200">
-              <Upload size={24} className="text-white/20 group-hover:text-white/40 transition-colors" />
+            <div className="w-12 h-12 rounded-xl bg-white/[0.05] flex items-center justify-center transition-all duration-200">
+              <Upload size={24} className="text-indigo-400/40 group-hover:text-indigo-400/80 transition-colors" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-medium text-white/40">Drop video here</p>
-              <p className="text-xs text-white/20 mt-1.5">or click to browse</p>
+              <p className="text-sm font-medium text-white/50">Drop video here</p>
+              <p className="text-xs text-white/25 mt-1.5">or click to browse</p>
             </div>
           </div>
         )}

@@ -132,7 +132,7 @@ export default function InstructionBar() {
           }
           disabled={disabled}
           className="flex-1 bg-transparent border-none px-4 py-3 text-[15px]
-            text-white placeholder:text-white/25
+            text-white placeholder:text-white/30
             focus:outline-none
             disabled:opacity-40 disabled:cursor-not-allowed"
         />
@@ -140,9 +140,9 @@ export default function InstructionBar() {
           type="submit"
           disabled={disabled || !instruction.trim()}
           title={isRefiningPlan ? 'Rebuild the plan with this refinement' : 'Go'}
-          className="w-9 h-9 rounded-lg bg-white text-black
+          className="w-9 h-9 rounded-lg bg-indigo-500 text-white
             flex items-center justify-center
-            hover:bg-zinc-200
+            hover:bg-indigo-600
             disabled:opacity-40 disabled:cursor-not-allowed
             transition-all active:scale-95"
         >

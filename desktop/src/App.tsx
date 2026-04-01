@@ -47,7 +47,7 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
       )}
       {state.view === 'upload' ? (
         /* ===== UPLOAD STATE: Minimal, action-first (Runway/Descript style) ===== */
-        <div className="flex-1 flex flex-col relative bg-[#0A0A0F] overflow-hidden">
+        <div className="flex-1 flex flex-col relative bg-[#1a1a2e] overflow-hidden">
           {/* Full-area drop target */}
           <div className="flex-1 flex flex-col items-center justify-center relative">
             <DropZone />
@@ -62,7 +62,7 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
         /* ===== EDITING STATE: True NLE layout ===== */
         <>
           <div className="flex flex-1 min-h-0 gap-3">
-            <div className="flex-1 flex flex-col relative min-w-0 bg-[#0A0A0F] overflow-hidden">
+            <div className="flex-1 flex flex-col relative min-w-0 bg-[#1a1a2e] overflow-hidden">
               <header className="absolute top-0 left-0 w-full h-12 flex items-center justify-between px-5 z-10 bg-gradient-to-b from-black/60 to-transparent">
                 <span className="text-sm font-semibold text-white/80">{state.videoInfo?.original_name || 'Untitled Project'}</span>
               </header>
@@ -72,7 +72,7 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
             </div>
 
             {(state.sidebarTab === 'edit' || state.sidebarTab === 'style' || state.sidebarTab === 'highlights') && (
-              <div className="w-[320px] border-l border-white/[0.06] bg-[#0A0A0F] z-10 flex flex-col overflow-hidden">
+              <div className="w-[320px] border-l border-white/[0.08] bg-[#1a1a2e] z-10 flex flex-col overflow-hidden">
                 {state.sidebarTab === 'edit' && <EditPlanPanel />}
                 {state.sidebarTab === 'style' && <StylePanel />}
                 {state.sidebarTab === 'highlights' && <HighlightsPanel />}
@@ -84,8 +84,8 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
             <div className="w-full flex-shrink-0 z-50">
               <InstructionBar />
             </div>
-            <div className="flex-1 border-t border-white/[0.06] bg-[#0A0A0F] overflow-hidden flex items-center justify-center">
-              <div className="text-sm text-white/20 font-medium tracking-widest uppercase">Timeline</div>
+            <div className="flex-1 border-t border-white/[0.08] bg-[#1a1a2e] overflow-hidden flex items-center justify-center">
+              <div className="text-sm text-white/15 font-medium tracking-widest uppercase">Timeline</div>
             </div>
           </div>
         </>
@@ -211,7 +211,7 @@ export default function App() {
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>
-      <div className="flex h-screen w-screen bg-[#000000] overflow-hidden selection:bg-violet-500/30">
+      <div className="flex h-screen w-screen bg-[#16162b] overflow-hidden selection:bg-violet-500/30">
         {state.error && (
           <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-2.5 bg-red-500/10 border border-red-500/20 rounded-full text-red-500 text-sm z-50 backdrop-blur-md shadow-2xl">
             <AlertCircle size={14} />
