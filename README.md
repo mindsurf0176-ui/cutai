@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/icon-final.png" width="128" alt="CutAI"></p>
+<p align="center"><img src="assets/icon-final.png?v=1" width="128" alt="CutAI"></p>
 
 # CutAI
 
