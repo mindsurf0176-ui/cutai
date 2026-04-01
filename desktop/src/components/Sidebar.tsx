@@ -1,16 +1,8 @@
-import {
-  Upload,
-  Scissors,
-  Palette,
-  Sparkles,
-  Settings,
-  Clapperboard
-} from 'lucide-react';
+import { Upload, Scissors, Palette, Sparkles, Settings } from 'lucide-react';
 import { useApp, type SidebarTab } from '../store';
-import { Button } from '@/components/ui/button';
 
 const TABS: { id: SidebarTab; label: string; icon: typeof Upload }[] = [
-  { id: 'upload', label: 'Upload', icon: Upload },
+  { id: 'upload', label: 'Import', icon: Upload },
   { id: 'edit', label: 'Edit', icon: Scissors },
   { id: 'style', label: 'Style', icon: Palette },
   { id: 'highlights', label: 'Highlights', icon: Sparkles },
@@ -18,52 +10,55 @@ const TABS: { id: SidebarTab; label: string; icon: typeof Upload }[] = [
 
 export default function Sidebar() {
   const { state, dispatch } = useApp();
-  const backendLabel = state.backendStatus === 'starting' ? 'starting' : state.backendStatus === 'checking' ? 'checking' : state.backendOnline ? 'online' : 'offline';
-  const backendDotClass = state.backendStatus === 'starting' || state.backendStatus === 'checking' ? 'bg-yellow-500' : state.backendOnline ? 'bg-green-500' : 'bg-red-500';
+  const backendDot = state.backendStatus === 'starting' || state.backendStatus === 'checking'
+    ? 'bg-warning' : state.backendOnline ? 'bg-success' : 'bg-error';
 
   return (
-    <aside className="w-[64px] flex flex-col items-center bg-bg-elevated border border-border py-4 z-20 flex-shrink-0 shadow-lg">
-      <div className="w-10 h-10 flex items-center justify-center mb-6 overflow-hidden rounded-lg border border-border">
+    <aside className="w-[72px] flex flex-col items-center bg-bg-panel border-r border-border py-5 flex-shrink-0">
+      {/* Logo */}
+      <div className="w-10 h-10 mb-8 rounded-lg overflow-hidden flex-shrink-0">
         <img src="/logo.png" alt="CutAI" className="w-full h-full object-cover" />
       </div>
 
-      <nav className="flex flex-col gap-2 w-full px-3">
+      {/* Nav */}
+      <nav className="flex flex-col items-center gap-1 w-full px-2 flex-1">
         {TABS.map(({ id, label, icon: Icon }) => {
-          const isActive = state.sidebarTab === id;
-          const isDisabled = id !== 'upload' && !state.videoId;
-
+          const active = state.sidebarTab === id;
+          const disabled = id !== 'upload' && !state.videoId;
           return (
-            <Button
+            <button
               key={id}
-              variant={isActive ? "secondary" : "ghost"}
-              size="icon"
-              className={`w-full h-12 rounded-lg transition-colors duration-200 ${isActive ? 'bg-accent text-text-primary' : 'text-text-secondary hover:bg-border hover:text-text-primary'}`}
               onClick={() => {
-                if (!isDisabled) {
+                if (!disabled) {
                   dispatch({ type: 'SET_SIDEBAR_TAB', tab: id });
-                  if (id === 'upload') {
-                    dispatch({ type: 'SET_VIEW', view: 'upload' });
-                  } else {
-                    dispatch({ type: 'SET_VIEW', view: 'editor' });
-                  }
+                  dispatch({ type: 'SET_VIEW', view: id === 'upload' ? 'upload' : 'editor' });
                 }
               }}
-              disabled={isDisabled}
+              disabled={disabled}
               title={label}
+              className={`
+                w-12 h-12 flex flex-col items-center justify-center gap-1 rounded-lg transition-all duration-150
+                ${active
+                  ? 'bg-accent text-white'
+                  : 'text-text-muted hover:text-text-secondary hover:bg-bg-surface'
+                }
+                ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
+              `}
             >
-              <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-            </Button>
+              <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
+              <span className="text-[10px] font-medium leading-none">{label}</span>
+            </button>
           );
         })}
       </nav>
 
-      <div className="flex-1" />
-
-      <Button variant="ghost" size="icon" className="w-12 h-12 rounded-lg text-text-secondary hover:bg-border hover:text-text-primary mb-4">
-        <Settings size={22} />
-      </Button>
-      
-      <div className={`w-2 h-2 rounded-full mb-3 ${backendDotClass}`} title={`Backend ${backendLabel}`} />
+      {/* Bottom */}
+      <div className="flex flex-col items-center gap-3">
+        <button className="w-10 h-10 flex items-center justify-center rounded-lg text-text-muted hover:text-text-secondary hover:bg-bg-surface transition-colors" title="Settings">
+          <Settings size={20} strokeWidth={1.8} />
+        </button>
+        <div className={`w-2 h-2 rounded-full ${backendDot}`} />
+      </div>
     </aside>
   );
 }
