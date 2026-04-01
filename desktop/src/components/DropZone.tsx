@@ -92,14 +92,14 @@ export default function DropZone() {
         onDrop={handleDrop}
         className={`
           flex flex-col items-center justify-center w-full h-full cursor-pointer
-          transition-all duration-300 ease-out group
+          transition-all duration-200 group
           ${dragging
-            ? 'bg-violet-500/5'
+            ? 'bg-white/[0.02]'
             : ''
           }
         `}
       >
-      <div className={`flex flex-col items-center justify-center px-16 py-14 rounded-3xl border border-dashed transition-all duration-300 ${dragging ? 'border-violet-500/60 scale-[1.02]' : 'border-white/[0.07] group-hover:border-white/15'}`}>
+      <div className={`flex flex-col items-center justify-center px-16 py-14 transition-all duration-200`}>
         <input
           ref={inputRef}
           type="file"
@@ -134,12 +134,12 @@ export default function DropZone() {
           </div>
         ) : (
           <div className="flex flex-col items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-violet-500/10 group-hover:border-violet-500/30 transition-all duration-300">
-              <Upload size={24} className="text-white/30 group-hover:text-violet-400 transition-colors duration-300" />
+            <div className="w-12 h-12 rounded-xl bg-white/[0.04] flex items-center justify-center transition-all duration-200">
+              <Upload size={24} className="text-white/20 group-hover:text-white/40 transition-colors" />
             </div>
             <div className="text-center">
-              <p className="text-[15px] font-semibold text-white/70">Drop video here</p>
-              <p className="text-[13px] text-white/30 mt-1">or click to browse</p>
+              <p className="text-sm font-medium text-white/40">Drop video here</p>
+              <p className="text-xs text-white/20 mt-1.5">or click to browse</p>
             </div>
           </div>
         )}

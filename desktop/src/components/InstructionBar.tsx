@@ -140,7 +140,7 @@ export default function InstructionBar() {
           type="submit"
           disabled={disabled || !instruction.trim()}
           title={isRefiningPlan ? 'Rebuild the plan with this refinement' : 'Go'}
-          className="w-10 h-10 rounded-xl bg-white text-black
+          className="w-9 h-9 rounded-lg bg-white text-black
             flex items-center justify-center
             hover:bg-zinc-200
             disabled:opacity-40 disabled:cursor-not-allowed

@@ -22,12 +22,12 @@ export default function Sidebar() {
   const backendDotClass = state.backendStatus === 'starting' || state.backendStatus === 'checking' ? 'bg-yellow-500' : state.backendOnline ? 'bg-green-500' : 'bg-red-500';
 
   return (
-    <aside className="w-[68px] flex flex-col items-center bg-[#12121A]/80 backdrop-blur-2xl border border-white/10 rounded-2xl py-4 z-20 flex-shrink-0 shadow-2xl ring-1 ring-white/5">
-      <div className="w-12 h-12 flex items-center justify-center mb-6 overflow-hidden rounded-[14px] shadow-[0_4px_20px_rgba(168,85,247,0.4)]">
+    <aside className="w-[68px] flex flex-col items-center bg-[#12121A]/80 backdrop-blur-2xl border border-white/10 py-4 z-20 flex-shrink-0 shadow-2xl ring-1 ring-white/5">
+      <div className="w-10 h-10 flex items-center justify-center mb-6 overflow-hidden rounded-xl">
         <img src="/logo.png" alt="CutAI" className="w-full h-full object-cover" />
       </div>
 
-      <nav className="flex flex-col gap-4 w-full px-2">
+      <nav className="flex flex-col gap-1 w-full px-2">
         {TABS.map(({ id, label, icon: Icon }) => {
           const isActive = state.sidebarTab === id;
           const isDisabled = id !== 'upload' && !state.videoId;
@@ -37,7 +37,7 @@ export default function Sidebar() {
               key={id}
               variant={isActive ? "secondary" : "ghost"}
               size="icon"
-              className={`w-full h-12 rounded-xl transition-all duration-200 ${isActive ? 'bg-white/10 text-white shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
+              className={`w-full h-12 rounded-xl transition-all duration-200 ${isActive ? 'bg-white/[0.08] text-white' : 'text-muted-foreground hover:bg-white/[0.04] hover:text-foreground'}`}
               onClick={() => {
                 if (!isDisabled) {
                   dispatch({ type: 'SET_SIDEBAR_TAB', tab: id });
@@ -59,7 +59,7 @@ export default function Sidebar() {
 
       <div className="flex-1" />
 
-      <Button variant="ghost" size="icon" className="w-12 h-12 rounded-xl text-muted-foreground hover:bg-white/5 hover:text-foreground mb-4">
+      <Button variant="ghost" size="icon" className="w-12 h-12 rounded-xl text-muted-foreground hover:bg-white/[0.04] hover:text-foreground mb-4">
         <Settings size={22} />
       </Button>
       
