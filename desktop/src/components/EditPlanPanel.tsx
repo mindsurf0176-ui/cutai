@@ -104,9 +104,11 @@ export default function EditPlanPanel() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#27272a]">
         <h3 className="text-sm font-medium">Edit Plan</h3>
-        <button
+        <Button 
+          variant="ghost" 
+          size="sm" 
           onClick={() => dispatch({ type: 'CLEAR_EDIT_PLAN' })}
-          className="text-xs text-[#a1a1aa] hover:text-[var(--error)] transition-colors"
+          className="h-6 px-2 text-xs text-zinc-400 hover:text-red-500 hover:bg-red-500/10"
         >
           Clear
         </Button>
