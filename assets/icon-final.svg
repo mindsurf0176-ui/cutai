@@ -1,0 +1,33 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0" y1="0" x2="1024" y2="1024">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
+    </linearGradient>
+    <linearGradient id="grad2" x1="0" y1="0" x2="1024" y2="1024">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#D946EF"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Left side of the Play button (Original Video - Cyan/Blue) -->
+  <path d="M256 128 L896 512 L256 896 Z" fill="url(#grad1)"/>
+  
+  <!-- Massive Cut / Slash through it -->
+  <!-- We use a thick stroke that is effectively transparent by clipping, 
+       but since we can't easily clip in simple SVG without masks, 
+       I will just draw the right shifted piece and cover the middle.
+       Actually, I will just draw two polygons so it's fully transparent! -->
+       
+  <!-- Left Polygon -->
+  <path d="M256 128 L480 262 L480 762 L256 896 Z" fill="url(#grad1)"/>
+  
+  <!-- Right Polygon (Shifted down and color changed to represent AI/Style Transfer) -->
+  <path d="M544 380 L896 592 L544 804 Z" fill="url(#grad2)"/>
+  
+  <!-- AI Sparkle Top Right -->
+  <path d="M800 120 Q840 220 940 260 Q840 300 800 400 Q760 300 660 260 Q760 220 800 120 Z" fill="url(#grad2)"/>
+  
+  <!-- AI Sparkle Bottom Left -->
+  <path d="M150 700 Q170 750 220 770 Q170 790 150 840 Q130 790 80 770 Q130 750 150 700 Z" fill="url(#grad1)"/>
+</svg>
