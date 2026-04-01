@@ -131,21 +131,20 @@ export default function InstructionBar() {
               : 'Tell AI what to do with your video...'
           }
           disabled={disabled}
-          className="flex-1 bg-[#000000] border border-[#27272a] rounded-lg px-4 py-2.5 text-sm
-            text-zinc-200 placeholder:text-zinc-500/50
-            focus:outline-none focus:border-[#ffffff]
-            disabled:opacity-40 disabled:cursor-not-allowed
-            transition-colors"
+          className="flex-1 bg-transparent border-none px-4 py-3 text-[15px]
+            text-white placeholder:text-white/25
+            focus:outline-none
+            disabled:opacity-40 disabled:cursor-not-allowed"
         />
         <button
           type="submit"
           disabled={disabled || !instruction.trim()}
           title={isRefiningPlan ? 'Rebuild the plan with this refinement' : 'Go'}
-          className="w-10 h-10 rounded-lg bg-[#ffffff] text-white
+          className="w-10 h-10 rounded-xl bg-white text-black
             flex items-center justify-center
-            hover:bg-[#e4e4e7]
+            hover:bg-zinc-200
             disabled:opacity-40 disabled:cursor-not-allowed
-            transition-colors"
+            transition-all active:scale-95"
         >
           {loading ? (
             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-md animate-spin" />
