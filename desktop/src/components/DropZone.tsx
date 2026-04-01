@@ -82,18 +82,10 @@ export default function DropZone() {
     if (file) handleFile(file);
   };
 
-  if (!state.backendOnline) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-[#a1a1aa]">
-        <AlertCircle size={48} className="text-[var(--warning)]" />
-        <p className="text-lg font-medium">Backend is offline</p>
-        <p className="text-sm">Start the CutAI server at port 18910 to continue</p>
-      </div>
-    );
-  }
+  // Backend check removed - show upload UI always
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center h-full gap-8 p-10 w-full relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center gap-6 pb-32 w-full">
       <div
         onClick={handleClick}
         onDragOver={handleDragOver}

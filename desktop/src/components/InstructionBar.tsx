@@ -128,7 +128,7 @@ export default function InstructionBar() {
               ? isRefiningPlan
                 ? 'Refine the current plan... (e.g., "make the pacing faster and keep subtitles")'
                 : 'Type editing instruction... (e.g., "Cut the first 10 seconds")'
-              : 'Upload a video first to start editing'
+              : 'Tell AI what to do with your video...'
           }
           disabled={disabled}
           className="flex-1 bg-[#000000] border border-[#27272a] rounded-lg px-4 py-2.5 text-sm
@@ -140,7 +140,7 @@ export default function InstructionBar() {
         <button
           type="submit"
           disabled={disabled || !instruction.trim()}
-          title={isRefiningPlan ? 'Rebuild the plan with this refinement' : 'Create plan'}
+          title={isRefiningPlan ? 'Rebuild the plan with this refinement' : 'Go'}
           className="w-10 h-10 rounded-lg bg-[#ffffff] text-white
             flex items-center justify-center
             hover:bg-[#e4e4e7]
