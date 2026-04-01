@@ -102,21 +102,21 @@ export default function EditPlanPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#27272a]">
-        <h3 className="text-sm font-medium">Edit Plan</h3>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <h3 className="text-sm font-medium text-text-primary">Edit Plan</h3>
         <Button 
           variant="ghost" 
           size="sm" 
           onClick={() => dispatch({ type: 'CLEAR_EDIT_PLAN' })}
-          className="h-6 px-2 text-xs text-zinc-400 hover:text-red-500 hover:bg-red-500/10"
+          className="h-6 px-2 text-xs text-text-secondary hover:text-accent hover:bg-accent/10"
         >
           Clear
         </Button>
       </div>
 
-      <div className="px-4 py-3 text-xs text-[#a1a1aa] border-b border-[#27272a]">
+      <div className="px-4 py-3 text-xs text-text-secondary border-b border-border">
         <p className="italic">"{editPlan.instruction}"</p>
-        <p className="mt-1">
+        <p className="mt-1 text-text-muted">
           Estimated output: {formatTime(editPlan.estimated_duration)}
         </p>
       </div>
@@ -127,49 +127,51 @@ export default function EditPlanPanel() {
           return (
             <div
               key={index}
-              className="flex items-center gap-3 px-4 py-3 border-b border-[#27272a]/50 group hover:bg-[#18181b]/30 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 border-b border-border/50 group hover:bg-bg-panel/80 transition-colors"
             >
-              <div className="w-7 h-7 rounded-md bg-[#ffffff]/10 flex items-center justify-center flex-shrink-0">
-                <Icon size={14} className="text-[#ffffff]" />
+              <div className="w-7 h-7 rounded-md bg-accent/10 flex items-center justify-center flex-shrink-0">
+                <Icon size={14} className="text-text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium capitalize">{op.type}</p>
+                <p className="text-xs font-medium capitalize text-text-secondary">
+                  {op.type}
+                </p>
                 {op.description && (
-                  <p className="text-[11px] text-[#a1a1aa] truncate">
+                  <p className="text-[11px] text-text-muted truncate">
                     {op.description}
                   </p>
                 )}
                 {op.start_time !== undefined && op.end_time !== undefined && (
-                  <p className="text-[10px] text-[#a1a1aa] tabular-nums">
+                  <p className="text-[10px] text-text-muted tabular-nums">
                     {formatTime(op.start_time)} → {formatTime(op.end_time)}
                   </p>
                 )}
               </div>
               <Button
                 onClick={() => dispatch({ type: 'REMOVE_OPERATION', index })}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-[var(--error)]/20 transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-accent/10 transition-all"
               >
-                <Trash2 size={12} className="text-[var(--error)]" />
+                <Trash2 size={12} className="text-accent" />
               </Button>
             </div>
           );
         })}
         {editPlan.operations.length === 0 && (
-          <div className="flex items-center justify-center h-20 text-xs text-[#a1a1aa]">
+          <div className="flex items-center justify-center h-20 text-xs text-text-muted">
             No operations — add instructions below
           </div>
         )}
       </div>
 
-      <div className="border-t border-[#27272a] px-4 py-3">
+      <div className="border-t border-border px-4 py-3">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-medium text-[#fafafa]">Preview quality</p>
-            <p className="text-[11px] text-[#a1a1aa]">
+            <p className="text-xs font-medium text-text-primary">Preview quality</p>
+            <p className="text-[11px] text-text-muted">
               Lower resolutions generate faster.
             </p>
           </div>
-          <div className="inline-flex rounded-lg border border-[#27272a] bg-[#000000] p-1">
+          <div className="inline-flex rounded-lg border border-border bg-bg-elevated p-1">
             {PREVIEW_RESOLUTIONS.map((resolution) => {
               const selected = previewResolution === resolution;
 
@@ -181,9 +183,9 @@ export default function EditPlanPanel() {
                   disabled={previewBusy}
                   className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                     selected
-                      ? 'bg-[#ffffff] text-black'
-                      : 'text-[#a1a1aa] hover:text-[#fafafa]'
-                  } disabled:cursor-not-allowed disabled:opacity-50`}
+                      ? 'bg-accent text-text-primary'
+                      : 'text-text-muted hover:text-text-primary'
+                  } disabled:cursor-not-allowed disabled:opacity-40`}
                 >
                   {resolution}p
                 </Button>
@@ -195,12 +197,12 @@ export default function EditPlanPanel() {
         <div className="mb-3">
           <div className="mb-2 flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-medium text-[#fafafa]">Render quality</p>
-              <p className="text-[11px] text-[#a1a1aa]">
+              <p className="text-xs font-medium text-text-primary">Render quality</p>
+              <p className="text-[11px] text-text-muted">
                 {selectedRenderPreset.description}
               </p>
             </div>
-            <div className="inline-flex rounded-lg border border-[#27272a] bg-[#000000] p-1">
+            <div className="inline-flex rounded-lg border border-border bg-bg-elevated p-1">
               {RENDER_PRESET_OPTIONS.map((preset) => {
                 const selected = renderPreset === preset.value;
 
@@ -212,9 +214,9 @@ export default function EditPlanPanel() {
                     disabled={renderBusy}
                     className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                       selected
-                        ? 'bg-[#ffffff] text-black'
-                        : 'text-[#a1a1aa] hover:text-[#fafafa]'
-                    } disabled:cursor-not-allowed disabled:opacity-50`}
+                        ? 'bg-accent text-text-primary'
+                        : 'text-text-muted hover:text-text-primary'
+                    } disabled:cursor-not-allowed disabled:opacity-40`}
                   >
                     {preset.label}
                   </Button>
@@ -228,8 +230,8 @@ export default function EditPlanPanel() {
           <div className="mb-3">
             <div className="mb-2 flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-medium text-[#fafafa]">Subtitle export</p>
-                <p className="text-[11px] text-[#a1a1aa]">
+                <p className="text-xs font-medium text-text-primary">Subtitle export</p>
+                <p className="text-[11px] text-text-muted">
                   {selectedSubtitleExportMode.description}
                 </p>
               </div>
@@ -249,12 +251,12 @@ export default function EditPlanPanel() {
                     disabled={renderBusy}
                     className={`rounded-lg border px-3 py-2 text-left transition-colors ${
                       selected
-                        ? 'border-[#ffffff] bg-[#ffffff]/10'
-                        : 'border-[#27272a] bg-[#000000] hover:border-[#ffffff]/40'
-                    } disabled:cursor-not-allowed disabled:opacity-50`}
+                        ? 'border-accent bg-accent/20'
+                        : 'border-border bg-bg-elevated hover:border-accent'
+                    } disabled:cursor-not-allowed disabled:opacity-40`}
                   >
-                    <p className="text-xs font-medium text-[#fafafa]">{option.label}</p>
-                    <p className="mt-0.5 text-[11px] text-[#a1a1aa]">
+                    <p className="text-xs font-medium text-text-primary">{option.label}</p>
+                    <p className="mt-0.5 text-[11px] text-text-muted">
                       {option.description}
                     </p>
                   </Button>
@@ -270,8 +272,8 @@ export default function EditPlanPanel() {
             disabled={!canPreview}
             title={!canPreview ? validationMessage ?? 'Preview is already running' : undefined}
             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
-              bg-[#18181b] text-[#fafafa] text-sm font-medium
-              hover:bg-[#18181b]/80
+              bg-bg-elevated text-text-primary text-sm font-medium
+              hover:bg-bg-panel
               disabled:opacity-40 disabled:cursor-not-allowed
               transition-colors"
           >
@@ -287,8 +289,8 @@ export default function EditPlanPanel() {
             disabled={!canRender}
             title={!canRender ? validationMessage ?? 'Render is already running' : undefined}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
-              bg-[#ffffff] text-black text-sm font-medium
-              hover:bg-[#e4e4e7]
+              bg-accent text-text-primary text-sm font-medium
+              hover:bg-accent/90
               disabled:opacity-40 disabled:cursor-not-allowed
               transition-colors"
           >
@@ -298,7 +300,7 @@ export default function EditPlanPanel() {
         </div>
       </div>
       {validationMessage && (
-        <div className="px-4 pb-3 text-[11px] text-[#a1a1aa]">
+        <div className="px-4 pb-3 text-[11px] text-text-muted">
           {validationMessage}
         </div>
       )}

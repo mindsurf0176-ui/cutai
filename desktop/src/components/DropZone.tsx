@@ -92,14 +92,14 @@ export default function DropZone() {
         onDrop={handleDrop}
         className={`
           flex flex-col items-center justify-center w-full h-full cursor-pointer
-          transition-all duration-200 group
+          transition-colors duration-200 group bg-bg-elevated border border-border rounded-lg
           ${dragging
-            ? 'bg-white/[0.03]'
+            ? 'bg-accent/10'
             : ''
           }
         `}
       >
-      <div className={`flex flex-col items-center justify-center px-16 py-14 transition-all duration-200`}>
+      <div className={`flex flex-col items-center justify-center px-16 py-14 transition-colors duration-200 bg-bg-panel border border-border rounded-lg`}>
         <input
           ref={inputRef}
           type="file"
@@ -108,45 +108,45 @@ export default function DropZone() {
           onChange={handleInputChange}
         />
         {uploading ? (
-          <div className="flex flex-col items-center gap-4 w-full px-12">
-            <Film size={40} className="text-[#ffffff] animate-pulse" />
-            <p className="text-sm text-[#a1a1aa]">
+          <div className="flex flex-col items-center gap-4 w-full px-12 text-text-primary">
+            <Film size={40} className="text-accent animate-pulse" />
+            <p className="text-sm text-text-secondary">
               Uploading {selectedFile?.name}...
             </p>
             <Progress.Root
-              className="relative w-full h-2 overflow-hidden rounded-md bg-[#000000]"
+              className="relative w-full h-2 overflow-hidden rounded-md bg-bg-base"
               value={state.uploadProgress}
             >
               <Progress.Indicator
-                className="h-full bg-[#ffffff] transition-[width] duration-300 ease-out rounded-md"
+                className="h-full bg-accent transition-[width] duration-300 ease-out rounded-md"
                 style={{ width: `${state.uploadProgress}%` }}
               />
             </Progress.Root>
-            <p className="text-xs text-[#a1a1aa]">{state.uploadProgress}%</p>
+            <p className="text-xs text-text-secondary">{state.uploadProgress}%</p>
           </div>
         ) : selectedFile ? (
           <div className="flex flex-col items-center gap-3">
-            <Film size={40} className="text-[#ffffff]" />
+            <Film size={40} className="text-accent" />
             <p className="text-sm font-medium">{selectedFile.name}</p>
-            <p className="text-xs text-[#a1a1aa]">
+            <p className="text-xs text-text-muted">
               {formatFileSize(selectedFile.size)}
             </p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-5">
-            <div className="w-12 h-12 rounded-xl bg-white/[0.05] flex items-center justify-center transition-all duration-200">
-              <Upload size={24} className="text-indigo-400/40 group-hover:text-indigo-400/80 transition-colors" />
+            <div className="w-12 h-12 rounded-lg bg-border flex items-center justify-center transition-colors duration-200">
+              <Upload size={24} className="text-accent/60 group-hover:text-accent transition-colors" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-medium text-white/50">Drop video here</p>
-              <p className="text-xs text-white/25 mt-1.5">or click to browse</p>
+              <p className="text-sm font-medium text-text-secondary/80">Drop video here</p>
+              <p className="text-xs text-text-muted mt-1.5">or click to browse</p>
             </div>
           </div>
         )}
       </div>
 
       {uploadError && (
-        <div className="flex items-center gap-2 text-sm text-red-500 mt-4">
+        <div className="flex items-center gap-2 text-sm text-accent mt-4">
           <AlertCircle size={16} />
           <span>{uploadError}</span>
         </div>

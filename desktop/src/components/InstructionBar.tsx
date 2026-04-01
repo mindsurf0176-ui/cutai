@@ -58,22 +58,22 @@ export default function InstructionBar() {
   return (
     <div className="w-full transition-all duration-300 group relative">
       {selectedStylePreset && state.videoId && (
-        <div className="mb-3 flex items-start justify-between gap-3 rounded-lg border border-[#ffffff]/25 bg-[#ffffff]/10 px-3 py-2">
+        <div className="mb-3 flex items-start justify-between gap-3 rounded-lg border border-border bg-bg-panel px-3 py-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Wand2 size={12} className="text-[#ffffff]" />
-              <span className="text-xs font-medium text-zinc-200">
+              <Wand2 size={12} className="text-text-primary" />
+              <span className="text-xs font-medium text-text-secondary">
                 Planning with {selectedStylePreset.name}
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-zinc-500">
+            <p className="mt-1 text-[11px] text-text-muted">
               New instructions use this preset as context instead of only applying it immediately.
             </p>
           </div>
           <button
             type="button"
             onClick={() => dispatch({ type: 'SET_PLANNING_STYLE_PRESET', preset: null })}
-            className="rounded-md p-1 text-zinc-500 hover:bg-[#ffffff]/10 hover:text-zinc-200 transition-colors"
+            className="rounded-md p-1 text-text-muted hover:bg-border hover:text-text-primary transition-colors"
             aria-label="Clear planning style"
           >
             <X size={12} />
@@ -90,8 +90,8 @@ export default function InstructionBar() {
               onClick={() => handleSubmit(preset)}
               disabled={disabled}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md
-                bg-[#18181b] text-zinc-500
-                hover:bg-[#ffffff]/20 hover:text-[#ffffff]
+                bg-bg-base text-text-muted
+                hover:bg-border hover:text-text-primary
                 disabled:opacity-40 disabled:cursor-not-allowed
                 transition-colors"
             >
@@ -104,13 +104,13 @@ export default function InstructionBar() {
 
       {/* Plan summary */}
       {state.editPlan && (
-        <div className="mb-2 px-3 py-2 rounded-lg bg-[#ffffff]/10 border border-[#ffffff]/20 text-xs text-zinc-500">
-          <span className="text-[#ffffff] font-medium">Plan:</span>{' '}
+        <div className="mb-2 px-3 py-2 rounded-lg bg-bg-elevated border border-border text-xs text-text-muted">
+          <span className="text-text-primary font-medium">Plan:</span>{' '}
           {state.editPlan.summary}
           {selectedStylePreset && (
             <>
               {' '}
-              <span className="text-[#ffffff] font-medium">Style context:</span>{' '}
+              <span className="text-text-primary font-medium">Style context:</span>{' '}
               {selectedStylePreset.name}
             </>
           )}
@@ -132,7 +132,7 @@ export default function InstructionBar() {
           }
           disabled={disabled}
           className="flex-1 bg-transparent border-none px-4 py-3 text-[15px]
-            text-white placeholder:text-white/30
+            text-text-primary placeholder:text-text-muted
             focus:outline-none
             disabled:opacity-40 disabled:cursor-not-allowed"
         />
@@ -140,14 +140,14 @@ export default function InstructionBar() {
           type="submit"
           disabled={disabled || !instruction.trim()}
           title={isRefiningPlan ? 'Rebuild the plan with this refinement' : 'Go'}
-          className="w-9 h-9 rounded-lg bg-indigo-500 text-white
+          className="w-9 h-9 rounded-lg bg-accent text-text-primary
             flex items-center justify-center
-            hover:bg-indigo-600
+            hover:bg-accent/90
             disabled:opacity-40 disabled:cursor-not-allowed
             transition-all active:scale-95"
         >
           {loading ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-md animate-spin" />
+            <div className="w-4 h-4 border-2 border-text-muted border-t-text-primary rounded-md animate-spin" />
           ) : (
             <Send size={16} />
           )}

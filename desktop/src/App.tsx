@@ -32,39 +32,39 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
   const { state } = useApp();
 
   return (
-    <div className="flex flex-col flex-1 h-full min-h-0 gap-3">
+    <div className="flex flex-col flex-1 h-full min-h-0 gap-4 bg-bg-base text-text-primary">
       {/* Backend offline notice (small banner, doesn\'t block UI) */}
       {state.backendStatus !== 'online' && (
-        <div className="flex items-center gap-3 px-5 py-3 border-b border-amber-500/20 bg-amber-500/5 flex-shrink-0">
-          <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-          <span className="text-sm text-amber-200/80 font-medium flex-1">
+        <div className="flex items-center gap-3 px-5 py-3 border-b border-border bg-bg-panel flex-shrink-0">
+          <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+          <span className="text-sm text-text-secondary font-medium flex-1">
             {state.backendStatus === 'checking' ? 'Connecting to backend...' : state.backendStatus === 'starting' ? 'Starting backend...' : 'Backend offline \u2014 start cutai server to enable editing'}
           </span>
-          <button onClick={onRetryBackend} disabled={retryingBackend} className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors disabled:opacity-50">
+          <button onClick={onRetryBackend} disabled={retryingBackend} className="text-xs font-semibold text-accent hover:text-text-primary transition-colors disabled:opacity-50">
             {retryingBackend ? 'Retrying...' : 'Retry'}
           </button>
         </div>
       )}
       {state.view === 'upload' ? (
         /* ===== UPLOAD STATE: Minimal, action-first (Runway/Descript style) ===== */
-        <div className="flex-1 flex flex-col relative bg-[#1a1a2e] overflow-hidden">
+        <div className="flex-1 flex flex-col relative bg-bg-elevated overflow-hidden">
           {/* Full-area drop target */}
           <div className="flex-1 flex flex-col items-center justify-center relative">
             <DropZone />
           </div>
 
           {/* Command bar docked at bottom */}
-          <div className="w-full px-6 pb-6 z-50">
+          <div className="w-full px-6 pb-6 z-50 bg-bg-panel border-t border-border">
             <InstructionBar />
           </div>
         </div>
       ) : (
         /* ===== EDITING STATE: True NLE layout ===== */
         <>
-          <div className="flex flex-1 min-h-0 gap-3">
-            <div className="flex-1 flex flex-col relative min-w-0 bg-[#1a1a2e] overflow-hidden">
-              <header className="absolute top-0 left-0 w-full h-12 flex items-center justify-between px-5 z-10 bg-gradient-to-b from-black/60 to-transparent">
-                <span className="text-sm font-semibold text-white/80">{state.videoInfo?.original_name || 'Untitled Project'}</span>
+          <div className="flex flex-1 min-h-0 gap-4 bg-bg-base">
+            <div className="flex-1 flex flex-col relative min-w-0 bg-bg-elevated overflow-hidden">
+              <header className="absolute top-0 left-0 w-full h-12 flex items-center justify-between px-5 z-10 bg-bg-panel border-b border-border">
+                <span className="text-sm font-semibold text-text-secondary">{state.videoInfo?.original_name || 'Untitled Project'}</span>
               </header>
               <div className="flex-1 flex items-center justify-center w-full h-full relative">
                 <VideoPreview />
@@ -72,7 +72,7 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
             </div>
 
             {(state.sidebarTab === 'edit' || state.sidebarTab === 'style' || state.sidebarTab === 'highlights') && (
-              <div className="w-[320px] border-l border-white/[0.08] bg-[#1a1a2e] z-10 flex flex-col overflow-hidden">
+              <div className="w-[320px] border-l border-border bg-bg-elevated z-10 flex flex-col overflow-hidden">
                 {state.sidebarTab === 'edit' && <EditPlanPanel />}
                 {state.sidebarTab === 'style' && <StylePanel />}
                 {state.sidebarTab === 'highlights' && <HighlightsPanel />}
@@ -80,12 +80,12 @@ export function AppMainContent({ onRetryBackend, retryingBackend }: AppMainConte
             )}
           </div>
 
-          <div className="h-[200px] flex-shrink-0 flex flex-col gap-3">
+          <div className="h-[200px] flex-shrink-0 flex flex-col gap-4 bg-bg-panel border-t border-border">
             <div className="w-full flex-shrink-0 z-50">
               <InstructionBar />
             </div>
-            <div className="flex-1 border-t border-white/[0.08] bg-[#1a1a2e] overflow-hidden flex items-center justify-center">
-              <div className="text-sm text-white/15 font-medium tracking-widest uppercase">Timeline</div>
+            <div className="flex-1 border-t border-border bg-bg-elevated overflow-hidden flex items-center justify-center">
+              <div className="text-sm text-text-muted font-medium tracking-widest uppercase">Timeline</div>
             </div>
           </div>
         </>
@@ -211,14 +211,14 @@ export default function App() {
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>
-      <div className="flex h-screen w-screen bg-[#16162b] overflow-hidden selection:bg-violet-500/30">
+      <div className="flex h-screen w-screen bg-bg-base overflow-hidden selection:bg-accent/30">
         {state.error && (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-2.5 bg-red-500/10 border border-red-500/20 rounded-full text-red-500 text-sm z-50 backdrop-blur-md shadow-2xl">
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-2.5 bg-bg-panel border border-border rounded-lg text-accent text-sm z-50 shadow">
             <AlertCircle size={14} />
             <span className="font-medium">{state.error}</span>
             <button
               onClick={() => dispatch({ type: 'SET_ERROR', error: null })}
-              className="p-1 rounded-full hover:bg-red-500/20 transition-colors ml-2"
+              className="p-1 rounded-lg hover:bg-accent/10 transition-colors ml-2"
             >
               <X size={12} />
             </button>

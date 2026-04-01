@@ -22,12 +22,12 @@ export default function Sidebar() {
   const backendDotClass = state.backendStatus === 'starting' || state.backendStatus === 'checking' ? 'bg-yellow-500' : state.backendOnline ? 'bg-green-500' : 'bg-red-500';
 
   return (
-    <aside className="w-[68px] flex flex-col items-center bg-[#12121A]/80 backdrop-blur-2xl border border-white/10 py-4 z-20 flex-shrink-0 shadow-2xl ring-1 ring-white/5">
-      <div className="w-10 h-10 flex items-center justify-center mb-6 overflow-hidden rounded-xl">
+    <aside className="w-[64px] flex flex-col items-center bg-bg-elevated border border-border py-4 z-20 flex-shrink-0 shadow-lg">
+      <div className="w-10 h-10 flex items-center justify-center mb-6 overflow-hidden rounded-lg border border-border">
         <img src="/logo.png" alt="CutAI" className="w-full h-full object-cover" />
       </div>
 
-      <nav className="flex flex-col gap-1 w-full px-2">
+      <nav className="flex flex-col gap-2 w-full px-3">
         {TABS.map(({ id, label, icon: Icon }) => {
           const isActive = state.sidebarTab === id;
           const isDisabled = id !== 'upload' && !state.videoId;
@@ -37,7 +37,7 @@ export default function Sidebar() {
               key={id}
               variant={isActive ? "secondary" : "ghost"}
               size="icon"
-              className={`w-full h-12 rounded-xl transition-all duration-200 ${isActive ? 'bg-white/[0.08] text-white' : 'text-muted-foreground hover:bg-white/[0.04] hover:text-foreground'}`}
+              className={`w-full h-12 rounded-lg transition-colors duration-200 ${isActive ? 'bg-accent text-text-primary' : 'text-text-secondary hover:bg-border hover:text-text-primary'}`}
               onClick={() => {
                 if (!isDisabled) {
                   dispatch({ type: 'SET_SIDEBAR_TAB', tab: id });
@@ -59,11 +59,11 @@ export default function Sidebar() {
 
       <div className="flex-1" />
 
-      <Button variant="ghost" size="icon" className="w-12 h-12 rounded-xl text-muted-foreground hover:bg-white/[0.04] hover:text-foreground mb-4">
+      <Button variant="ghost" size="icon" className="w-12 h-12 rounded-lg text-text-secondary hover:bg-border hover:text-text-primary mb-4">
         <Settings size={22} />
       </Button>
       
-      <div className={`w-2 h-2 rounded-full mb-2 ${backendDotClass}`} title={`Backend ${backendLabel}`} />
+      <div className={`w-2 h-2 rounded-full mb-3 ${backendDotClass}`} title={`Backend ${backendLabel}`} />
     </aside>
   );
 }

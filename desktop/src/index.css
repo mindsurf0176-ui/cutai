@@ -39,46 +39,39 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
 }
 
 :root {
-  --background: #1a1a2e;
-  --foreground: oklch(0.985 0 0);
-  --card: #1f1f35;
-  --card-foreground: oklch(0.985 0 0);
+  --background: #16162b;
+  --foreground: #e8e8f0;
+  --card: #1e1e38;
+  --card-foreground: #e8e8f0;
   --popover: #252547;
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: #2a2a4a;
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: #33335a;
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: #33335a;
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --popover-foreground: #e8e8f0;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --secondary: #1e1e38;
+  --secondary-foreground: #8b8ba7;
+  --muted: #5a5a7a;
+  --muted-foreground: #5a5a7a;
+  --accent: #6366f1;
+  --accent-foreground: #ffffff;
+  --destructive: #ff4d4d;
+  --destructive-foreground: #ffffff;
   --border: rgba(255,255,255,0.08);
   --input: rgba(255,255,255,0.08);
-  --ring: oklch(0.87 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: #27272a;
-  --sidebar-ring: oklch(0.439 0 0);
-  --radius: 0.5rem;
+  --ring: rgba(255,255,255,0.08);
+  --chart-1: #6366f1;
+  --chart-2: #6366f1;
+  --chart-3: #6366f1;
+  --chart-4: #6366f1;
+  --chart-5: #6366f1;
+  --sidebar: #16162b;
+  --sidebar-foreground: #e8e8f0;
+  --radius: 8px;
 }
 
 body {
@@ -101,7 +94,7 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 2px;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--muted);
