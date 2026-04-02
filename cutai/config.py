@@ -25,11 +25,13 @@ class CutAIConfig(BaseModel):
     """Application configuration."""
 
     openai_api_key: str = Field(default="", description="OpenAI API key")
+    google_api_key: str = Field(default="", description="Google AI (Gemini) API key — free tier available")
     default_whisper_model: str = Field(default="base", description="Whisper model size")
-    default_llm: str = Field(default="gpt-4o", description="Default LLM model")
+    default_llm: str = Field(default="auto", description="Default LLM: auto, ollama, gemini, openai, or model name")
     output_dir: str = Field(default="./output", description="Default output directory")
     ffmpeg_path: str = Field(default=FFMPEG_PATH, description="Path to FFmpeg binary")
     ffprobe_path: str = Field(default=FFPROBE_PATH, description="Path to FFprobe binary")
+    ollama_model: str = Field(default="llama3.2", description="Ollama model name for local LLM planning")
 
 
 def load_config() -> CutAIConfig:
@@ -53,11 +55,14 @@ def load_config() -> CutAIConfig:
     # Environment variable overrides
     env_map = {
         "OPENAI_API_KEY": "openai_api_key",
+        "GOOGLE_API_KEY": "google_api_key",
+        "GEMINI_API_KEY": "google_api_key",
         "CUTAI_WHISPER_MODEL": "default_whisper_model",
         "CUTAI_LLM": "default_llm",
         "CUTAI_OUTPUT_DIR": "output_dir",
         "CUTAI_FFMPEG_PATH": "ffmpeg_path",
         "CUTAI_FFPROBE_PATH": "ffprobe_path",
+        "CUTAI_OLLAMA_MODEL": "ollama_model",
     }
 
     for env_key, config_key in env_map.items():

@@ -73,34 +73,28 @@ def create_edit_plan(
 
     # Try LLM-based planning
     config = load_config()
-    if config.openai_api_key and use_llm:
-        try:
-            llm_plan = _plan_with_llm(
-                analysis, instruction, llm_model, config.openai_api_key,
-                preferences=preferences,
-            )
-            return llm_plan
-        except Exception as exc:
-            logger.warning("LLM planning failed: %s. Using rule-based fallback.", exc)
+    if use_llm:
+        llm_backend = _resolve_llm_backend(config, llm_model)
+        if llm_backend:
+            try:
+                llm_plan = _plan_with_llm_backend(
+                    analysis, instruction, config, llm_backend,
+                    preferences=preferences,
+                )
+                return llm_plan
+            except Exception as exc:
+                logger.warning("LLM planning failed (%s): %s. Using rule-based fallback.", llm_backend, exc)
 
-    # If LLM failed or no API key, use rule-based
+    # If LLM failed or no backend available, use rule-based
     if rule_plan:
         return rule_plan
 
     # Last resort: return a minimal plan
-    logger.warning("No LLM API key and no matching rules. Returning minimal plan.")
-    if use_llm:
-        summary = (
-            "No matching rules found for this instruction. "
-            "Please provide an OpenAI API key for LLM-based planning, "
-            "or try a supported rule-based instruction (e.g., 'remove silence', 'add subtitles')."
-        )
-    else:
-        summary = (
-            "No matching rules found for this instruction. "
-            "Supported instructions: remove silence, add subtitles, trim to N minutes, "
-            "speed up, add bgm, color grade (cinematic/bright/warm), transitions, etc."
-        )
+    logger.warning("No LLM backend available and no matching rules. Returning minimal plan.")
+    summary = (
+        "No matching rules found. Try: remove silence, add subtitles, trim to N minutes, "
+        "add bgm, color grade, etc. Or set up Ollama (free, local) for smarter planning."
+    )
     return EditPlan(
         instruction=instruction,
         operations=[],
@@ -336,6 +330,154 @@ def _detect_bgm_mood(text: str) -> BgmMood:
             return mood
 
     return "calm"  # Default mood
+
+
+def _resolve_llm_backend(config, llm_model: str) -> str | None:
+    """Determine which LLM backend to use.
+
+    Priority (when default_llm="auto"):
+    1. Ollama (if running locally) — free, no API key
+    2. Google Gemini (if GOOGLE_API_KEY set) — free tier
+    3. OpenAI (if OPENAI_API_KEY set) — paid
+    """
+    llm_setting = config.default_llm.lower().strip()
+
+    if llm_setting == "ollama":
+        return "ollama"
+    if llm_setting in ("gemini", "google"):
+        return "gemini" if config.google_api_key else None
+    if llm_setting == "openai":
+        return "openai" if config.openai_api_key else None
+
+    # Auto-detection
+    if llm_setting in ("auto", "gpt-4o", "gpt-4o-mini"):
+        if _is_ollama_running():
+            return "ollama"
+        if config.google_api_key:
+            return "gemini"
+        if config.openai_api_key:
+            return "openai"
+    elif config.openai_api_key:
+        return "openai"
+    return None
+
+
+def _is_ollama_running() -> bool:
+    """Check if Ollama is running locally."""
+    import urllib.request
+    try:
+        req = urllib.request.Request("http://localhost:11434/api/tags", method="GET")
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+
+def _plan_with_llm_backend(
+    analysis: VideoAnalysis,
+    instruction: str,
+    config,
+    backend: str,
+    preferences: UserPreferences | None = None,
+) -> EditPlan:
+    """Route to the appropriate LLM backend."""
+    if backend == "ollama":
+        return _plan_with_ollama(analysis, instruction, config, preferences)
+    elif backend == "gemini":
+        return _plan_with_gemini(analysis, instruction, config, preferences)
+    else:
+        model = config.default_llm if config.default_llm not in ("auto",) else "gpt-4o"
+        return _plan_with_llm(analysis, instruction, model, config.openai_api_key, preferences)
+
+
+def _build_planning_messages(analysis: VideoAnalysis, instruction: str) -> tuple[str, str]:
+    """Build system + user prompt for LLM planning (shared across backends)."""
+    system_prompt = "You are a professional video editor AI."
+    if SYSTEM_PROMPT_PATH.exists():
+        system_prompt = SYSTEM_PROMPT_PATH.read_text()
+
+    analysis_summary = {
+        "file": Path(analysis.file_path).name,
+        "duration": analysis.duration,
+        "fps": analysis.fps,
+        "resolution": f"{analysis.width}x{analysis.height}",
+        "scenes": [
+            {"id": s.id, "start": s.start_time, "end": s.end_time,
+             "duration": s.duration, "has_speech": s.has_speech, "is_silent": s.is_silent,
+             "transcript": s.transcript[:200] if s.transcript else None}
+            for s in analysis.scenes[:50]
+        ],
+        "silent_segments": [{"start": seg.start, "end": seg.end} for seg in analysis.quality.silent_segments],
+        "silence_ratio": analysis.quality.overall_silence_ratio,
+    }
+
+    user_message = (
+        f"## Video Analysis\n```json\n{json.dumps(analysis_summary, ensure_ascii=False, indent=2)}\n```\n\n"
+        f"## Editing Instruction\n{instruction}\n\n"
+        "Respond with JSON: {{\"operations\": [...], \"summary\": \"...\"}}\n"
+        "Each operation needs 'type': cut, subtitle, bgm, colorgrade, transition, speed."
+    )
+    return system_prompt, user_message
+
+
+def _plan_with_ollama(
+    analysis: VideoAnalysis, instruction: str, config, preferences=None,
+) -> EditPlan:
+    """Generate an edit plan using Ollama (local, free)."""
+    import urllib.request
+
+    system_prompt, user_message = _build_planning_messages(analysis, instruction)
+    model = config.ollama_model
+    logger.info("Calling Ollama (%s) for edit planning...", model)
+
+    payload = json.dumps({
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message},
+        ],
+        "format": "json", "stream": False,
+        "options": {"temperature": 0.3},
+    }).encode()
+
+    req = urllib.request.Request(
+        "http://localhost:11434/api/chat", data=payload,
+        headers={"Content-Type": "application/json"}, method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=120) as resp:
+        result = json.loads(resp.read())
+
+    raw = result.get("message", {}).get("content", "")
+    if not raw:
+        raise ValueError("Ollama returned empty response")
+    data = json.loads(raw)
+    return _parse_llm_response(data, instruction)
+
+
+def _plan_with_gemini(
+    analysis: VideoAnalysis, instruction: str, config, preferences=None,
+) -> EditPlan:
+    """Generate an edit plan using Google Gemini (free tier available)."""
+    import urllib.request
+
+    system_prompt, user_message = _build_planning_messages(analysis, instruction)
+    logger.info("Calling Gemini for edit planning...")
+
+    payload = json.dumps({
+        "contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_message}"}]}],
+        "generationConfig": {"responseMimeType": "application/json", "temperature": 0.3},
+    }).encode()
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={config.google_api_key}"
+    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        result = json.loads(resp.read())
+
+    raw = result["candidates"][0]["content"]["parts"][0]["text"]
+    if not raw:
+        raise ValueError("Gemini returned empty response")
+    data = json.loads(raw)
+    return _parse_llm_response(data, instruction)
 
 
 def _plan_with_llm(
