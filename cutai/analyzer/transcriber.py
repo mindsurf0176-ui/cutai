@@ -1,15 +1,17 @@
-"""Audio transcription using faster-whisper (CTranslate2 backend).
+"""Audio transcription with automatic backend selection.
 
-Transcribes the audio track of a video file and returns
-timestamped segments. faster-whisper is 4-8x faster than
-openai-whisper on CPU while maintaining identical accuracy.
+Backend priority (highest first):
+1. **mlx-whisper** — Apple Silicon native, 3-5x faster (macOS arm64)
+2. **faster-whisper** — CTranslate2, 4-8x faster than openai-whisper on CPU
+3. **openai-whisper** — original, slowest
 
-Falls back to openai-whisper if faster-whisper is not installed.
+Falls through automatically if a backend is not installed.
 """
 
 from __future__ import annotations
 
 import logging
+import platform
 
 from cutai.models.types import TranscriptSegment
 
@@ -17,13 +19,33 @@ logger = logging.getLogger(__name__)
 
 VALID_MODELS = ("tiny", "base", "small", "medium", "large")
 
-# Try to import faster_whisper first, fall back to openai-whisper
-_USE_FASTER_WHISPER = False
-try:
-    from faster_whisper import WhisperModel as _FasterWhisperModel
-    _USE_FASTER_WHISPER = True
-except ImportError:
-    _FasterWhisperModel = None  # type: ignore[assignment, misc]
+# ── Backend detection ────────────────────────────────────────────────────────
+
+_BACKEND: str = "none"
+
+# 1. Try mlx-whisper (Apple Silicon only)
+_MLX_AVAILABLE = False
+if platform.system() == "Darwin" and platform.machine() == "arm64":
+    try:
+        import mlx_whisper as _mlx_whisper_mod  # type: ignore[import-untyped]
+        _MLX_AVAILABLE = True
+        _BACKEND = "mlx-whisper"
+    except ImportError:
+        _mlx_whisper_mod = None  # type: ignore[assignment]
+
+# 2. Try faster-whisper
+_FASTER_AVAILABLE = False
+if _BACKEND == "none":
+    try:
+        from faster_whisper import WhisperModel as _FasterWhisperModel
+        _FASTER_AVAILABLE = True
+        _BACKEND = "faster-whisper"
+    except ImportError:
+        _FasterWhisperModel = None  # type: ignore[assignment, misc]
+
+# 3. openai-whisper is the final fallback (checked at call time)
+if _BACKEND == "none":
+    _BACKEND = "openai-whisper"
 
 
 def transcribe(
@@ -31,7 +53,10 @@ def transcribe(
     model_name: str = "base",
     language: str | None = None,
 ) -> list[TranscriptSegment]:
-    """Transcribe audio from a video file using faster-whisper or Whisper.
+    """Transcribe audio from a video file.
+
+    Automatically selects the fastest available backend:
+    mlx-whisper > faster-whisper > openai-whisper.
 
     Args:
         video_path: Path to the video (or audio) file.
@@ -47,11 +72,61 @@ def transcribe(
         )
         model_name = "base"
 
-    if _USE_FASTER_WHISPER:
+    logger.info("Transcription backend: %s", _BACKEND)
+
+    if _MLX_AVAILABLE:
+        return _transcribe_mlx_whisper(video_path, model_name, language)
+    elif _FASTER_AVAILABLE:
         return _transcribe_faster_whisper(video_path, model_name, language)
     else:
-        logger.info("faster-whisper not available, using openai-whisper (slower)")
+        logger.info("No accelerated backend found, using openai-whisper (slower)")
         return _transcribe_openai_whisper(video_path, model_name, language)
+
+
+def _transcribe_mlx_whisper(
+    video_path: str,
+    model_name: str,
+    language: str | None,
+) -> list[TranscriptSegment]:
+    """Transcribe using mlx-whisper (Apple Silicon native, 3-5x faster)."""
+    logger.info("Loading mlx-whisper model '%s' (Apple Silicon accelerated)...", model_name)
+
+    # mlx-whisper uses HuggingFace model names
+    model_map = {
+        "tiny": "mlx-community/whisper-tiny",
+        "base": "mlx-community/whisper-base",
+        "small": "mlx-community/whisper-small",
+        "medium": "mlx-community/whisper-medium",
+        "large": "mlx-community/whisper-large-v3",
+    }
+    hf_model = model_map.get(model_name, f"mlx-community/whisper-{model_name}")
+
+    logger.info("Transcribing %s with mlx-whisper...", video_path)
+    kwargs: dict = {"path_or_hf_repo": hf_model}
+    if language:
+        kwargs["language"] = language
+
+    result = _mlx_whisper_mod.transcribe(video_path, **kwargs)  # type: ignore[union-attr]
+
+    segments: list[TranscriptSegment] = []
+    for seg in result.get("segments", []):
+        raw_logprob = float(seg.get("avg_logprob", -1.0))
+        confidence = max(0.0, min(1.0, 1.0 + raw_logprob))
+        segments.append(
+            TranscriptSegment(
+                start_time=round(float(seg["start"]), 3),
+                end_time=round(float(seg["end"]), 3),
+                text=seg["text"].strip(),
+                confidence=round(confidence, 4),
+            )
+        )
+
+    logger.info(
+        "mlx-whisper: transcribed %d segments (language=%s)",
+        len(segments),
+        result.get("language", "auto"),
+    )
+    return segments
 
 
 def _transcribe_faster_whisper(

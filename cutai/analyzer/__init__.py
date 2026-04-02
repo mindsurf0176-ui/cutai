@@ -66,6 +66,13 @@ def analyze_video(
     if not path.exists():
         raise FileNotFoundError(f"Video file not found: {video_path}")
 
+    # Check cache first
+    from cutai.analyzer.cache import get_cached, save_cache
+    cached = get_cached(str(path), whisper_model=whisper_model)
+    if cached is not None:
+        logger.info("Using cached analysis for %s", path.name)
+        return cached
+
     # Get video metadata
     meta = _get_video_metadata(str(path))
 
@@ -134,7 +141,7 @@ def analyze_video(
         if i < len(quality.audio_energy):
             scene.avg_energy = quality.audio_energy[i]
 
-    return VideoAnalysis(
+    analysis = VideoAnalysis(
         file_path=str(path.resolve()),
         duration=meta["duration"],
         fps=meta["fps"],
@@ -144,6 +151,11 @@ def analyze_video(
         transcript=transcript,
         quality=quality,
     )
+
+    # Save to cache for next time
+    save_cache(str(path), analysis, whisper_model=whisper_model)
+
+    return analysis
 
 
 def _get_video_metadata(video_path: str) -> dict:
