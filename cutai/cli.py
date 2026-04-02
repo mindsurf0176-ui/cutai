@@ -256,6 +256,7 @@ def edit(
     skip_transcription: bool = typer.Option(False, "--no-transcript", help="Skip Whisper transcription"),
     burn_subtitles: bool = typer.Option(True, "--burn-subtitles/--sidecar-subtitles", help="Burn subtitles into video by default. Use --sidecar-subtitles to save a .ass sidecar instead"),
     style: str | None = typer.Option(None, "--style", "-s", help="Edit DNA style file (.yaml) to apply instead of instruction-based planning"),
+    editstyle: str | None = typer.Option(None, "--editstyle", help="EDITSTYLE.md file to use (auto-detected if not specified)"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
 ) -> None:
     """Full pipeline: analyze → plan → edit → render.
@@ -263,12 +264,31 @@ def edit(
     Examples:
         cutai edit video.mp4 -i "remove silence and add subtitles"
         cutai edit video.mp4 --style vlog-casual.yaml
+        cutai edit video.mp4 --editstyle EDITSTYLE.md
     """
     _setup_logging(verbose)
     video_path = _validate_video(video)
 
-    if not instruction and not style:
-        console.print("[red]Error:[/red] Provide --instruction or --style (or both).")
+    # EDITSTYLE.md auto-detection (if no --style and no --editstyle given)
+    if not style and not editstyle:
+        editstyle = _detect_editstyle(video_path)
+
+    # If editstyle found, parse it and use as style
+    if editstyle:
+        try:
+            from cutai.style.editstyle_parser import parse_editstyle
+            es_result = parse_editstyle(editstyle)
+            console.print(
+                f"📝 EDITSTYLE.md detected: [bold]{es_result.dna.name}[/bold]. Applying style..."
+            )
+            # We'll use this below in the planning step
+            style = editstyle  # marker so the style branch is taken
+        except Exception as es_err:
+            console.print(f"[yellow]Warning:[/yellow] Failed to parse EDITSTYLE.md: {es_err}")
+            editstyle = None
+
+    if not instruction and not style and not editstyle:
+        console.print("[red]Error:[/red] Provide --instruction, --style, or --editstyle (or place an EDITSTYLE.md in your project).")
         raise typer.Exit(1)
 
     # Default output path
@@ -305,7 +325,19 @@ def edit(
 
             # Step 2: Plan (style-based or instruction-based)
             t2 = progress.add_task("Step 2/3: Generating edit plan...", total=None)
-            if style:
+            if editstyle:
+                from cutai.style import apply_style
+                from cutai.style.editstyle_parser import parse_editstyle
+
+                es_result = parse_editstyle(editstyle)
+                # Combine instruction with patterns and rules from EDITSTYLE.md
+                combined_instruction = instruction
+                if es_result.patterns:
+                    combined_instruction += "\n[Patterns] " + "; ".join(es_result.patterns)
+                if es_result.rules:
+                    combined_instruction += "\n[Rules] " + "; ".join(es_result.rules)
+                edit_plan = apply_style(analysis, es_result.dna, instruction=combined_instruction)
+            elif style:
                 from cutai.style import apply_style, load_style
 
                 style_dna = load_style(style)
@@ -999,6 +1031,113 @@ def style_show(
         raise
     except Exception as exc:
         _handle_error(exc)
+
+
+@app.command()
+def style_convert(
+    file: str = typer.Argument(help="Input file (.yaml or .md) to convert"),
+    to: str = typer.Option(..., "--to", help="Target format: 'md' or 'yaml'"),
+    output: str | None = typer.Option(None, "--output", "-o", help="Output file path"),
+) -> None:
+    """Convert between EDITSTYLE.md and YAML preset formats.
+
+    Examples:
+        cutai style-convert cinematic.yaml --to md
+        cutai style-convert EDITSTYLE.md --to yaml -o style.yaml
+    """
+    try:
+        from cutai.style.editstyle_converter import editstyle_to_yaml, yaml_to_editstyle
+
+        file_path = Path(file)
+        if not file_path.exists():
+            console.print(f"[red]Error:[/red] File not found: {file}")
+            raise typer.Exit(1)
+
+        target = to.lower().strip()
+        if target == "md":
+            result_text = yaml_to_editstyle(file)
+            out_path = output or str(file_path.with_suffix(".md"))
+            ext_label = "EDITSTYLE.md"
+        elif target in ("yaml", "yml"):
+            result_text = editstyle_to_yaml(file)
+            out_path = output or str(file_path.with_suffix(".yaml"))
+            ext_label = "YAML"
+        else:
+            console.print(f"[red]Error:[/red] --to must be 'md' or 'yaml', got '{to}'")
+            raise typer.Exit(1)
+
+        Path(out_path).write_text(result_text, encoding="utf-8")
+        console.print(f"✅ Converted to {ext_label}: [bold]{out_path}[/bold]")
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _handle_error(exc)
+
+
+@app.command()
+def style_validate(
+    file: str = typer.Argument(help="EDITSTYLE.md file to validate"),
+) -> None:
+    """Validate an EDITSTYLE.md file and display its parsed content.
+
+    Examples:
+        cutai style-validate EDITSTYLE.md
+    """
+    try:
+        from cutai.style.editstyle_parser import parse_editstyle
+
+        file_path = Path(file)
+        if not file_path.exists():
+            console.print(f"[red]Error:[/red] File not found: {file}")
+            raise typer.Exit(1)
+
+        result = parse_editstyle(file)
+        console.print(f"✅ [bold green]Valid EDITSTYLE.md[/bold green]: {result.dna.name}")
+        _display_dna(result.dna)
+
+        if result.patterns:
+            console.print()
+            console.print(Panel(
+                "\n".join(f"• {p}" for p in result.patterns),
+                title="📐 Patterns",
+                style="cyan",
+            ))
+        if result.rules:
+            console.print()
+            console.print(Panel(
+                "\n".join(f"• {r}" for r in result.rules),
+                title="📏 Rules",
+                style="yellow",
+            ))
+    except ValueError as ve:
+        console.print(f"[red]Validation failed:[/red] {ve}")
+        raise typer.Exit(1)
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _handle_error(exc)
+
+
+# ── EDITSTYLE.md auto-detection ──────────────────────────────────────────────
+
+
+def _detect_editstyle(video_path: Path) -> str | None:
+    """Auto-detect EDITSTYLE.md in standard locations.
+
+    Search order:
+        1. Current working directory
+        2. Next to the input video file
+        3. ~/.config/cutai/default-editstyle.md
+    """
+    candidates = [
+        Path.cwd() / "EDITSTYLE.md",
+        video_path.parent / "EDITSTYLE.md",
+        Path.home() / ".config" / "cutai" / "default-editstyle.md",
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            return str(candidate)
+    return None
 
 
 # ── Display helpers ──────────────────────────────────────────────────────────
