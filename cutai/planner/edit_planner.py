@@ -240,7 +240,7 @@ def _try_rule_based(analysis: VideoAnalysis, instruction: str) -> EditPlan | Non
 
     # ── BGM rules ────────────────────────────────────────────────────────
 
-    if _matches_any(lower, ["bgm", "배경음악", "음악 넣", "음악 추가", "배경 음악"]):
+    if _matches_any(lower, ["bgm", "music", "background music", "배경음악", "음악 넣", "음악 추가", "배경 음악", "bgm 넣", "bgm 추가"]):
         rule_matched = True
         mood = _detect_bgm_mood(lower)
         operations.append(BGMOperation(mood=mood))
