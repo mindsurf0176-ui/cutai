@@ -188,8 +188,8 @@ class TestPacingKeywords:
 - **Pacing**: fast (12 cuts/min)
 """
         r = parse_editstyle_text(text)
-        # "fast" keyword takes priority since it starts with "fast"
-        assert r.dna.rhythm.cuts_per_minute == 14.0
+        # Explicit number in parentheses takes priority over keyword
+        assert r.dna.rhythm.cuts_per_minute == 12.0
 
 
 class TestPercentageParsing:

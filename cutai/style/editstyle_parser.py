@@ -196,15 +196,23 @@ def _extract_duration(body: str, key: str) -> float | None:
 
 
 def _parse_pacing(s: str | None) -> float:
-    """Convert pacing keyword or explicit number to cuts_per_minute."""
+    """Convert pacing keyword or explicit number to cuts_per_minute.
+
+    If an explicit number is provided in parentheses (e.g. "medium (8 cuts/min)"),
+    the explicit number takes priority over the keyword.
+    """
     if not s:
         return 10.0
     low = s.lower().strip()
-    # Check keywords first
+    # Check for explicit number in parentheses first — e.g. "medium (8 cuts/min)"
+    paren_m = re.search(r"\(\s*([\d.]+)\s*(?:cuts?/min)?\s*\)", low)
+    if paren_m:
+        return float(paren_m.group(1))
+    # Then check keywords
     for kw, val in _PACING_MAP.items():
         if low.startswith(kw):
             return val
-    # Try explicit number like "12 cuts/min" or "(12 cuts/min)"
+    # Try bare number like "12 cuts/min" or "12"
     m = re.search(r"([\d.]+)\s*(?:cuts?/min)?", low)
     if m:
         return float(m.group(1))
