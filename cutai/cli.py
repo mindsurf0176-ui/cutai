@@ -1118,6 +1118,152 @@ def style_validate(
         _handle_error(exc)
 
 
+# ── Agent Mode ───────────────────────────────────────────────────────────────
+
+
+@app.command()
+def agent(
+    inputs: list[str] = typer.Argument(help="Input video file(s)"),
+    goal: str = typer.Option(..., "--goal", "-g", help="High-level editing goal"),
+    output: str = typer.Option("agent_output.mp4", "--output", "-o", help="Output file path"),
+    iterations: int = typer.Option(3, "--iterations", "-n", help="Max edit-evaluate iterations"),
+    min_score: float = typer.Option(80.0, "--min-score", help="Stop when score reaches this threshold"),
+    editstyle: str | None = typer.Option(None, "--editstyle", help="Path to EDITSTYLE.md"),
+    style: str | None = typer.Option(None, "--style", "-s", help="Path to EditDNA YAML"),
+    model: str = typer.Option("base", "--model", "-m", help="Whisper model size"),
+    llm: str = typer.Option("gpt-4o", "--llm", help="LLM model for planning"),
+    no_llm: bool = typer.Option(False, "--no-llm", help="Use rule-based planning only"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
+) -> None:
+    """🤖 Goal-driven autonomous video editing agent.
+
+    Analyzes → plans → renders → self-evaluates → iterates until the goal is met.
+
+    Examples:
+        cutai agent video.mp4 --goal "15분짜리 카페 브이로그, 따뜻하고 캐주얼하게"
+        cutai agent clip1.mp4 clip2.mp4 --goal "best moments reel, 3 minutes" -n 5
+        cutai agent footage/ --goal "cinematic travel video" --editstyle EDITSTYLE.md
+    """
+    _setup_logging(verbose)
+
+    # Expand directories to video files
+    expanded: list[str] = []
+    for inp in inputs:
+        p = Path(inp)
+        if p.is_dir():
+            expanded.extend(
+                str(f) for f in sorted(p.glob("*"))
+                if f.suffix.lower() in {".mp4", ".mov", ".avi", ".mkv", ".webm"}
+            )
+        elif p.exists():
+            expanded.append(str(p))
+        else:
+            console.print(f"[red]Error:[/red] File not found: {inp}")
+            raise typer.Exit(1)
+
+    if not expanded:
+        console.print("[red]Error:[/red] No video files found.")
+        raise typer.Exit(1)
+
+    console.print(Panel(
+        f"🤖 [bold]Agent Mode[/bold]\n"
+        f"🎯 Goal: [italic]{goal}[/italic]\n"
+        f"📁 Inputs: {len(expanded)} video(s)\n"
+        f"🔄 Max iterations: {iterations}\n"
+        f"📊 Target score: {min_score}\n"
+        f"📁 Output: [dim]{output}[/dim]",
+        style="magenta",
+    ))
+
+    try:
+        from cutai.agent.engine import AgentEngine
+        from rich.progress import Progress, SpinnerColumn, TextColumn
+
+        engine = AgentEngine(
+            inputs=expanded,
+            goal=goal,
+            output=output,
+            max_iterations=iterations,
+            min_score=min_score,
+            editstyle=editstyle,
+            style=style,
+            whisper_model=model,
+            llm_model=llm,
+            use_llm=not no_llm,
+            verbose=verbose,
+        )
+
+        current_task = [None]
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            def on_progress(step: str, detail: str) -> None:
+                if current_task[0] is not None:
+                    progress.update(current_task[0], completed=True)
+                current_task[0] = progress.add_task(detail, total=None)
+
+            result = engine.run(on_progress=on_progress)
+            if current_task[0] is not None:
+                progress.update(current_task[0], completed=True)
+
+        # Display results
+        console.print()
+        for it in result.iterations:
+            ev = it.evaluation
+            score_str = f"{ev.score:.0f}/100" if ev else "N/A"
+            status = "✅" if ev and ev.meets_goal else "🔄"
+            console.print(f"  {status} Iteration {it.iteration}: score {score_str}")
+            if ev and ev.strengths:
+                for s in ev.strengths:
+                    console.print(f"      [green]+ {s}[/green]")
+            if ev and ev.weaknesses:
+                for w in ev.weaknesses:
+                    console.print(f"      [red]- {w}[/red]")
+
+        console.print()
+        console.print(Panel(
+            f"✅ [bold green]Agent Complete[/bold green]\n"
+            f"📁 Output: [bold]{result.final_output}[/bold]\n"
+            f"📊 Final score: {result.final_score:.0f}/100\n"
+            f"🔄 Iterations: {result.total_iterations}",
+            style="green",
+        ))
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _handle_error(exc)
+
+
+# ── MCP Server ───────────────────────────────────────────────────────────────
+
+
+@app.command()
+def mcp_server(
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging"),
+) -> None:
+    """🔌 Start CutAI MCP Server for AI coding agent integration.
+
+    Exposes CutAI tools via the Model Context Protocol (stdio transport).
+    Connect from Claude Code, Cursor, or any MCP-compatible client.
+
+    MCP config example:
+        {
+          "mcpServers": {
+            "cutai": {
+              "command": "cutai",
+              "args": ["mcp-server"]
+            }
+          }
+        }
+    """
+    _setup_logging(verbose)
+    from cutai.mcp_server import run_stdio_server
+    run_stdio_server()
+
+
 # ── EDITSTYLE.md auto-detection ──────────────────────────────────────────────
 
 
