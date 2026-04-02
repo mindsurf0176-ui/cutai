@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cutai"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI video editor that takes natural language instructions and edits videos locally."
 readme = "README.md"
 license = "MIT"

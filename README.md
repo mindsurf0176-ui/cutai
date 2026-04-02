@@ -13,6 +13,14 @@
 
 **CutAI** is an open-source, local-first AI video editor. Give it a video and a sentence — it analyzes scenes, generates an edit plan, applies practical edits like cuts / subtitles / grading, and renders the result on your machine.
 
+### 🆕 v0.2.0 highlights
+
+- **🤖 Agent Mode** — goal-driven autonomous editing with self-evaluation loop
+- **🔌 MCP Server** — connect CutAI to Claude Code, Cursor, and other AI agents
+- **📝 EDITSTYLE.md** — portable editing style format (like DESIGN.md for video)
+- **🎨 7 style presets** — cinematic, vlog, cooking, tech, music, podcast, shorts
+- **⚡ Performance** — MLX Whisper (Apple Silicon), VideoToolbox hwaccel, analysis cache
+
 ## Current status
 
 CutAI is in an **ambitious but practical alpha** stage.
@@ -180,6 +188,10 @@ See [`desktop/README.md`](./desktop/README.md) for the desktop-specific guide, [
 | `cutai style-learn` | Learn style from multiple reference videos |
 | `cutai style-show` | Display an Edit DNA file |
 | `cutai prefs` | View or reset learned preferences |
+| `cutai agent` | 🤖 Goal-driven autonomous editing agent |
+| `cutai mcp-server` | 🔌 MCP Server for AI coding agent integration |
+| `cutai style-convert` | Convert between EDITSTYLE.md and YAML |
+| `cutai style-validate` | Validate an EDITSTYLE.md file |
 | `cutai server` | Start the API server used by the desktop app |
 
 ---
@@ -201,6 +213,78 @@ cutai edit myvideo.mp4 --style cinematic
 ```
 
 Edit DNA captures practical editing preferences such as pacing, transitions, visual tone, audio choices, and subtitle defaults in a portable YAML file.
+
+---
+
+## Agent Mode
+
+Let the AI handle the full editing workflow autonomously:
+
+```bash
+# Single video — agent analyzes, plans, renders, evaluates, and iterates
+cutai agent video.mp4 --goal "warm casual vlog with subtitles, 5 minutes max"
+
+# Multiple clips — agent selects the best parts
+cutai agent clip1.mp4 clip2.mp4 --goal "best moments reel, 3 minutes" -n 5
+
+# With a style preset
+cutai agent footage/ --goal "cinematic travel video" --editstyle EDITSTYLE.md
+```
+
+---
+
+## EDITSTYLE.md
+
+A portable, markdown-based format for video editing styles — like [DESIGN.md](https://designmd.ai) but for video editing.
+
+```markdown
+# My Vlog Style
+
+> Source: custom
+> CutAI EDITSTYLE v1
+
+## Rhythm
+- **Pacing**: fast (12 cuts/min)
+- **Silence tolerance**: 0.8s
+
+## Visual
+- **Color temperature**: warm
+
+## Subtitles
+- **Enabled**: yes
+- **Size**: large
+```
+
+Drop it in your project root → CutAI auto-detects and follows your style.
+
+Browse presets: [`awesome-editstyles/`](awesome-editstyles/)
+
+```bash
+# Convert between formats
+cutai style-convert style.yaml --to md
+cutai style-validate EDITSTYLE.md
+```
+
+→ [Full spec](docs/EDITSTYLE_SPEC.md)
+
+---
+
+## MCP Server
+
+Connect CutAI to AI coding agents (Claude Code, Cursor, Gemini CLI):
+
+```json
+{
+  "mcpServers": {
+    "cutai": {
+      "command": "cutai",
+      "args": ["mcp-server"]
+    }
+  }
+}
+```
+
+8 tools exposed: analyze, plan, edit, agent, style-extract, highlights, engagement, editstyle-parse.
 
 ---
 
